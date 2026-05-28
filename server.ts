@@ -3,6 +3,9 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 async function startServer() {
   const app = express();
@@ -169,6 +172,26 @@ async function startServer() {
   // API: Check server health
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", supabase_active: !!supabase });
+  });
+
+  // API: Secure Administrator Login via Server-side Environment Variables (Dynamic Runtime)
+  app.post("/api/admin/login", (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password required" });
+    }
+
+    const masterEmail = process.env.VITE_ADMIN_EMAIL || "al7anjri@gmail.com";
+    const masterPass = process.env.VITE_ADMIN_PASS || process.env.VITE_ADMIN_PASSWORD || "Khater@9220981";
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const isMaster = masterEmail ? (trimmedEmail === masterEmail.toLowerCase() && password === masterPass) : false;
+
+    if (isMaster) {
+      return res.json({ success: true, email: masterEmail });
+    } else {
+      return res.status(401).json({ error: "Invalid administrator credentials" });
+    }
   });
 
   // API: Get all master orders (Admin lookup)

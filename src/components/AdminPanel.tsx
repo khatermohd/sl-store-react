@@ -33,7 +33,7 @@ export default function AdminPanel({
     if (saved) {
       try { return JSON.parse(saved); } catch (_) {}
     }
-    const defaultMasterEmail = (import.meta as any).env.VITE_ADMIN_EMAIL || '';
+    const defaultMasterEmail = localStorage.getItem('sl_admin_email') || (import.meta as any).env.VITE_ADMIN_EMAIL || '';
     const masterName = defaultMasterEmail ? defaultMasterEmail.split('@')[0] : 'admin';
     return [
       { email: defaultMasterEmail, name: `المشرف الرئيسي ${masterName}` }
@@ -262,7 +262,7 @@ export default function AdminPanel({
 
   // Save admin credentials
   const [adminEmailInput, setAdminEmailInput] = useState(() => localStorage.getItem('sl_admin_email') || (import.meta as any).env.VITE_ADMIN_EMAIL || '');
-  const [adminPassInput, setAdminPassInput] = useState(() => localStorage.getItem('sl_admin_password') || (import.meta as any).env.VITE_ADMIN_PASSWORD || '');
+  const [adminPassInput, setAdminPassInput] = useState(() => localStorage.getItem('sl_admin_password') || (import.meta as any).env.VITE_ADMIN_PASSWORD || (import.meta as any).env.VITE_ADMIN_PASS || '');
 
   if (!user || !user.isAdmin) return null;
 

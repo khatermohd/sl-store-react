@@ -13,19 +13,62 @@ export default function LoginScreen({ onLogin, onClose, lang }: LoginScreenProps
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleAdminSubmit = (e: React.FormEvent) => {
+  const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError('');
+    setLoading(true);
 
     if (!email.trim() || !password.trim()) {
       setError(isAr ? 'يرجى كتابة كافة الحقول المطلوبة' : 'Please satisfy all input requirements');
+      setLoading(false);
       return;
     }
 
-    // Read saved master credentials from configuration or env variables
+    const trimmedEmail = email.trim().toLowerCase();
+
+    // 1. Try server-side dynamic login first (guarantees .env matches dynamically on Render)
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmedEmail, password })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          localStorage.setItem('sl_admin_email', trimmedEmail);
+          localStorage.setItem('sl_admin_password', password);
+
+          const masterNameSnippet = trimmedEmail.split('@')[0];
+          const activeName = isAr 
+            ? `المشرف العام ${masterNameSnippet} 👑` 
+            : `Lead Admin ${masterNameSnippet} 👑`;
+
+          onLogin({
+            name: activeName,
+            phone: '39442011',
+            email: trimmedEmail,
+            isAdmin: true,
+            isVerified: true
+          });
+          
+          setLoading(false);
+          alert(isAr ? '🔓 أهلاً بك مجدداً في لوحة تحكم S&L' : '🔓 Welcome back to S&L control panel');
+          onClose();
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Server login offline or failed, trying local fallback:", err);
+    }
+
+    // 2. Fallback to offline/localStorage/compiled env variables
     const masterEmail = localStorage.getItem('sl_admin_email') || (import.meta as any).env.VITE_ADMIN_EMAIL || '';
-    const masterPassword = localStorage.getItem('sl_admin_password') || (import.meta as any).env.VITE_ADMIN_PASSWORD || '';
+    const masterPassword = localStorage.getItem('sl_admin_password') || (import.meta as any).env.VITE_ADMIN_PASSWORD || (import.meta as any).env.VITE_ADMIN_PASS || '';
 
     // Read additional moderators list
     let moderators: AdminAccount[] = [];
@@ -34,11 +77,17 @@ export default function LoginScreen({ onLogin, onClose, lang }: LoginScreenProps
       try { moderators = JSON.parse(savedMods); } catch (_) {}
     }
 
-    const trimmedEmail = email.trim().toLowerCase();
     const isMaster = masterEmail ? (trimmedEmail === masterEmail.toLowerCase() && password === masterPassword) : false;
     const isMod = moderators.some(acc => acc.email.toLowerCase() === trimmedEmail && acc.password === password);
 
+    setLoading(false);
+
     if (isMaster || isMod) {
+      if (isMaster) {
+        localStorage.setItem('sl_admin_email', trimmedEmail);
+        localStorage.setItem('sl_admin_password', password);
+      }
+      
       const masterNameSnippet = masterEmail ? masterEmail.split('@')[0] : 'admin';
       const activeName = isMaster 
         ? (isAr ? `المشرف العام ${masterNameSnippet} 👑` : `Lead Admin ${masterNameSnippet} 👑`)
@@ -158,10 +207,11 @@ export default function LoginScreen({ onLogin, onClose, lang }: LoginScreenProps
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] hover:from-[#d946ef] hover:to-[#8b5cf6] text-white font-black py-3 sm:py-3.5 rounded-xl text-xs sm:text-sm shadow-lg shadow-[#8b5cf6]/10 flex items-center justify-center gap-1.5 transition transform active:scale-95 cursor-pointer text-center"
+            disabled={loading}
+            className={`w-full bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] hover:from-[#d946ef] hover:to-[#8b5cf6] text-white font-black py-3 sm:py-3.5 rounded-xl text-xs sm:text-sm shadow-lg shadow-[#8b5cf6]/10 flex items-center justify-center gap-1.5 transition transform active:scale-95 cursor-pointer text-center ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <Sparkles size={14} />
-            <span>{isAr ? 'تسجيل الدخول 🔐' : 'Sign In 🔐'}</span>
+            <Sparkles size={14} className={loading ? 'animate-spin' : ''} />
+            <span>{loading ? (isAr ? 'جاري التحقق... ⏳' : 'Verifying... ⏳') : (isAr ? 'تسجيل الدخول 🔐' : 'Sign In 🔐')}</span>
           </button>
         </form>
       </div>
