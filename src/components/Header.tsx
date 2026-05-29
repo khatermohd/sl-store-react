@@ -1,5 +1,5 @@
 import { User } from '../types';
-import { ShoppingBag, Globe, LogIn, LogOut, User as UserIcon, Tag } from 'lucide-react';
+import { ShoppingBag, Globe, LogIn, LogOut, Bell, Sparkles } from 'lucide-react';
 
 interface HeaderProps {
   lang: 'ar' | 'en';
@@ -13,6 +13,10 @@ interface HeaderProps {
   storeLogoUrl?: string;
   activeTab: 'products' | 'coupons';
   setActiveTab: (tab: 'products' | 'coupons') => void;
+  activeCategory: string;
+  setActiveCategory: (category: string) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
 }
 
 export default function Header({
@@ -26,166 +30,152 @@ export default function Header({
   storeName,
   storeLogoUrl,
   activeTab,
-  setActiveTab
+  setActiveTab,
+  activeCategory,
+  setActiveCategory
 }: HeaderProps) {
   const isAr = lang === 'ar';
 
+  // The 10 categories requested by the user: (السيارات، المنزل، إلكترونيات، العطور والبخور، أطفال، العاب، الملابس، إيجار، كوبونات، أخرى)
+  const categoryTabs = [
+    { id: 'cars', type: 'products', titleAr: 'السيارات 🚗', titleEn: 'Cars 🚗', emoji: '🚗' },
+    { id: 'home', type: 'products', titleAr: 'المنزل 🏠', titleEn: 'Home 🏠', emoji: '🏠' },
+    { id: 'electronics', type: 'products', titleAr: 'إلكترونيات 💻', titleEn: 'Electronics 💻', emoji: '💻' },
+    { id: 'perfumes', type: 'products', titleAr: 'العطور والبخور 💨', titleEn: 'Fragrances 💨', emoji: '💨' },
+    { id: 'children', type: 'products', titleAr: 'أطفال 👶', titleEn: 'Children 👶', emoji: '👶' },
+    { id: 'games', type: 'products', titleAr: 'العاب 🎮', titleEn: 'Video Games 🎮', emoji: '🎮' },
+    { id: 'clothes', type: 'products', titleAr: 'الملابس 👕', titleEn: 'Clothes 👕', emoji: '👕' },
+    { id: 'rent', type: 'products', titleAr: 'إيجار 🔑', titleEn: 'Rent 🔑', emoji: '🔑' },
+    { id: 'coupons', type: 'coupons', titleAr: 'كوبونات 🎟️', titleEn: 'Coupons 🎟️', emoji: '🎟️' },
+    { id: 'others', type: 'products', titleAr: 'أخرى 👜', titleEn: 'Others 👜', emoji: '👜' }
+  ];
+
+  const handleTabClick = (tab: typeof categoryTabs[0]) => {
+    if (tab.type === 'coupons') {
+      setActiveTab('coupons');
+    } else {
+      setActiveTab('products');
+      setActiveCategory(tab.id);
+    }
+  };
+
+  const isTabActive = (tab: typeof categoryTabs[0]) => {
+    if (tab.type === 'coupons') {
+      return activeTab === 'coupons';
+    }
+    return activeTab === 'products' && activeCategory === tab.id;
+  };
+
   return (
-    <header className="bg-[#12092e]/80 backdrop-blur-md border border-[#8b5cf6]/20 rounded-2xl p-3.5 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 max-w-7xl mx-auto w-full text-white">
-      {/* Brand Logo & Name */}
-      <div className="flex items-center justify-between w-full md:w-auto gap-4">
-        <div className="flex items-center gap-3">
+    <header className="bg-gradient-to-b from-black/25 to-[#12092e]/80 backdrop-blur-2xl border border-[#8b5cf6]/20 rounded-3xl p-5 sm:p-6 flex flex-col gap-6 text-white shadow-2xl relative w-full overflow-hidden" dir={isAr ? 'rtl' : 'ltr'}>
+      {/* Visual top border glow */}
+      <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#8b5cf6]/40 to-transparent"></div>
+
+      {/* Row 1: Logo & Store Name (S&L PREMIUM STORE) + Quick Controls */}
+      <div className="flex items-center justify-between gap-4 w-full">
+        <div className="flex items-center gap-3.5">
           {storeLogoUrl ? (
             <img 
               src={storeLogoUrl} 
               alt={storeName} 
               referrerPolicy="no-referrer"
-              className="w-10 h-10 rounded-xl object-contain border border-[#8b5cf6]/30 shadow-md"
+              className="w-11 h-11 rounded-xl object-contain border border-[#8b5cf6]/35 shadow-md bg-white/5"
             />
           ) : (
-            /* Gorgeous Handcrafted vector emblem logo fitting S&L name */
-            <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#8b5cf6] via-[#d946ef] to-[#bfdbfe] flex items-center justify-center shadow-lg font-sans font-black select-none text-white text-xl tracking-tight uppercase border border-[#a78bfa]/40 group">
-              <span className="relative z-10 font-black animate-pulse">S&L</span>
-              <div className="absolute inset-0.5 rounded-[14px] bg-[#12092e] opacity-40 group-hover:opacity-0 transition duration-300"></div>
+            <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#da291c] via-[#ed8936] to-[#ec4899] flex items-center justify-center shadow-lg font-sans font-black select-none text-white text-2xl border border-white/20 group">
+              <span className="relative z-10 font-sans tracking-tight">S&L</span>
+              <div className="absolute inset-0.5 rounded-[14px] bg-[#12092e] opacity-40"></div>
             </div>
           )}
 
           <div className="text-right">
-            <span className="block font-black text-transparent bg-clip-text bg-gradient-to-r from-[#d946ef] to-[#bfdbfe] text-xl tracking-wide font-sans">{storeName}</span>
-            <span className="text-[9px] font-extrabold text-[#c5a059] block tracking-widest uppercase font-mono">
-              {isAr ? 'البحرين ● سوق متميز' : 'Bahrain ● Premium Hub'}
+            {/* Show name S&L STORE prominently as requested */}
+            <span className="block font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-white to-pink-300 text-2xl tracking-wide font-sans sm:text-3xl drop-shadow-md">
+              S&L STORE
+            </span>
+            <span className="text-[9.5px] font-black text-indigo-300 block tracking-widest uppercase font-mono mt-0.5">
+              {isAr ? 'البحرين ● متجرك المتكامل المعزز' : 'Bahrain ● Your Integrated Hub'}
             </span>
           </div>
         </div>
 
-        {/* Small responsive cart, lang bar, and Admin Lock visible on mobile only right beside logo */}
-        <div className="flex items-center gap-1.5 md:hidden">
-          {/* Cart trigger button */}
-          <button 
-            onClick={onCartToggle}
-            className="p-2.5 rounded-xl bg-[#1b124a] hover:bg-[#251b61] border border-[#ff007f]/30 text-white relative flex items-center justify-center"
-          >
-            <ShoppingBag size={15} className="text-[#e879f9]" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-[#d946ef] text-white text-[9px] font-mono font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-lg border border-[#12092e] animate-bounce">
-                {cartCount}
-              </span>
-            )}
-          </button>
+        {/* Quick controls: Language & Admin status */}
+        <div className="flex items-center gap-2">
           
-          {/* Lang toggle button */}
+          {/* Language Selection Toggle */}
           <button
             onClick={() => setLang(isAr ? 'en' : 'ar')}
-            className="p-2.5 rounded-xl bg-[#1b124a] text-zinc-350 text-[10px] font-bold border border-[#a78bfa]/20 flex items-center justify-center hover:text-white cursor-pointer select-none"
+            className="px-3 py-1.5 text-xs rounded-xl bg-[#1b124a]/85 text-zinc-300 border border-[#a78bfa]/15 flex items-center gap-1 hover:text-white cursor-pointer select-none transition"
           >
-            {isAr ? 'EN' : 'عربي'}
+            <Globe size={12} className="text-amber-400" />
+            <span className="font-bold">{isAr ? 'EN' : 'عربي'}</span>
           </button>
 
-          {/* Dedicated responsive admin entrance directly on mobile */}
+          {/* Admin Indicator Gateway */}
           {user ? (
-            <button
-              onClick={onLogout}
-              className="p-2 rounded-xl bg-rose-950/40 text-rose-400 border border-rose-500/20 text-[10px] font-bold"
-              title={isAr ? 'خروج المشرف' : 'Log out Admin'}
-            >
-              🚪
-            </button>
+            <div className="flex items-center gap-1.5 bg-[#1b124a]/80 border border-[#8b5cf6]/35 p-1.5 px-3 rounded-xl text-xs">
+              <span className="text-[10px] text-emerald-400 font-extrabold truncate max-w-[80px]">{user.name}</span>
+              <button 
+                onClick={onLogout} 
+                className="hover:text-rose-400 text-zinc-400 cursor-pointer" 
+                title={isAr ? 'تسجيل الخروج' : 'Logout Admin'}
+              >
+                <LogOut size={12} />
+              </button>
+            </div>
           ) : (
             <button
-              onClick={onRequestLogin}
-              className="px-2.5 py-1.5 rounded-xl bg-[#1e053f]/80 text-amber-300 border border-amber-500/30 font-black flex items-center gap-1 cursor-pointer hover:bg-amber-550 hover:text-white transition duration-200 text-[10.5px]"
-              title={isAr ? 'تسجيل دخول الإدارة 🔐' : 'Authorized Login 🔐'}
+               onClick={onRequestLogin}
+               className="px-3 py-1.5 rounded-xl bg-[#1b124a]/80 hover:bg-[#251b61] border border-[#a78bfa]/15 text-white font-extrabold cursor-pointer transition text-xs flex items-center gap-1"
             >
               <span>🔐</span>
-              <span>{isAr ? 'تسجيل دخول' : 'Sign In'}</span>
+              <span className="hidden sm:inline">{isAr ? 'إشراف' : 'Admin'}</span>
             </button>
           )}
+
         </div>
       </div>
 
-      {/* Center Slogan / Tabs Navigation */}
-      <div className="flex bg-[#12092e] border border-[#8b5cf6]/20 p-1 rounded-xl w-full md:w-auto max-w-sm justify-center">
-        <button
-          onClick={() => setActiveTab('products')}
-          className={`flex-1 md:flex-none px-3 sm:px-4 py-2 rounded-lg font-black text-[11px] sm:text-xs transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1.5 select-none ${
-            activeTab === 'products'
-              ? 'bg-[#8b5cf6] text-white shadow-md shadow-[#8b5cf6]/20'
-              : 'text-zinc-400 hover:text-white'
-          }`}
-        >
-          <ShoppingBag size={13} />
-          <span>{isAr ? 'منتجات المتجر' : 'Products'}</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('coupons')}
-          className={`flex-1 md:flex-none px-3 sm:px-4 py-2 rounded-lg font-black text-[11px] sm:text-xs transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1.5 select-none ${
-            activeTab === 'coupons'
-              ? 'bg-[#d946ef] text-white shadow-md shadow-[#d946ef]/20'
-              : 'text-zinc-400 hover:text-white'
-          }`}
-        >
-          <Tag size={13} />
-          <span>{isAr ? 'خصومات وعروض المحلات 🎟️' : 'Local Coupons'}</span>
-        </button>
+      {/* Row 2: قسم الأقسام (Categories) مباشِرةً تحت الإسِم */}
+      {/* We build a horizontal grid/collection of rounded cards style */}
+      <div className="border-t border-[#8b5cf6]/15 pt-4">
+        <div className="text-[10.5px] font-black text-zinc-400 mb-3 block px-1 tracking-wider uppercase">
+          {isAr ? 'أقسام المتجر المتكاملة 🛍️' : 'STORE DEPARTMENTS 🛍️'}
+        </div>
+
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-1.5 sm:gap-2.5 w-full">
+          {categoryTabs.map((tab) => {
+            const active = isTabActive(tab);
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab)}
+                className={`relative flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl transition-all duration-300 group cursor-pointer border ${
+                  active
+                    ? 'bg-gradient-to-b from-[#8b5cf6]/35 to-[#d946ef]/20 border-[#d946ef] shadow-[0_0_15px_rgba(217,70,239,0.35)] scale-[0.98]'
+                    : 'bg-[#12092e]/45 border-[#8b5cf6]/15 hover:border-[#8b5cf6]/50 hover:bg-[#12092e]/80'
+                }`}
+              >
+                {/* Bigger Emoji for aesthetic depth */}
+                <div className="text-2xl sm:text-3xl mb-2 transition duration-350 group-hover:scale-110">
+                  {tab.emoji}
+                </div>
+
+                {/* Structured label */}
+                <span className="text-[11px] sm:text-xs font-black tracking-tight text-white leading-none whitespace-nowrap text-center">
+                  {isAr ? tab.titleAr.split(' ')[0] : tab.titleEn.split(' ')[0]}
+                </span>
+
+                {/* Bottom colored indicator bar under active category */}
+                {active && (
+                  <span className="absolute bottom-1.5 w-6 h-0.5 bg-gradient-to-r from-amber-400 to-[#d946ef] rounded-full"></span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Language, Cart and Profile controls */}
-      <div className="hidden md:flex items-center gap-3">
-        {/* Language selector */}
-        <button
-          onClick={() => setLang(isAr ? 'en' : 'ar')}
-          className="px-3.5 py-2 rounded-xl bg-[#1b124a] hover:bg-[#251b61] text-zinc-200 text-xs font-black border border-[#a78bfa]/20 flex items-center gap-1.5 cursor-pointer transition select-none"
-        >
-          <Globe size={13} className="text-[#a78bfa]" />
-          <span>{isAr ? 'English' : 'العربية'}</span>
-        </button>
-
-        {/* Desktop badged Cart trigger */}
-        <button
-          onClick={onCartToggle}
-          className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#1b124a] to-[#2a1d6f] hover:from-[#2a1d6f] hover:to-[#1b124a] text-xs font-black border border-[#d946ef]/40 text-white relative flex items-center gap-2 cursor-pointer transition select-none shadow-md shadow-[#d946ef]/5"
-        >
-          <ShoppingBag size={14} className="text-[#e879f9]" />
-          <span>{isAr ? 'سلّة المشتريات' : 'My Cart'}</span>
-          {cartCount > 0 ? (
-            <span className="bg-[#d946ef] text-white text-[10px] font-mono font-black px-2 py-0.5 rounded-full animate-bounce">
-              {cartCount}
-            </span>
-          ) : (
-            <span className="text-zinc-500 font-mono text-[10px]">0</span>
-          )}
-        </button>
-
-        {/* User login / status button */}
-        {user ? (
-          <div className="flex items-center gap-2 bg-[#1b124a]/80 border border-[#8b5cf6]/30 px-3.5 py-1.5 rounded-xl">
-            <div className="text-right">
-              <span className="text-[8px] text-zinc-400 block font-bold leading-none mb-0.5">
-                {user.isAdmin ? (isAr ? 'المشرف العام 👑' : 'System Owner 👑') : (isAr ? 'العضو الحالي' : 'Authorized User')}
-              </span>
-              <span className="text-[11px] font-black text-white block leading-tight truncate max-w-[120px]">
-                {user.name}
-              </span>
-            </div>
-            
-            <button
-              onClick={onLogout}
-              title={isAr ? 'تسجيل الخروج' : 'Logout'}
-              className="p-1.5 text-zinc-400 hover:text-red-400 bg-[#12092e] rounded-lg transition"
-            >
-              <LogOut size={13} />
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={onRequestLogin}
-            className="bg-zinc-100 hover:bg-[#8b5cf6] hover:text-white text-slate-950 font-black text-xs px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95"
-          >
-            <LogIn size={13} />
-            <span>{isAr ? 'تسجيل الدخول' : 'Sign In'}</span>
-          </button>
-        )}
-      </div>
     </header>
   );
 }

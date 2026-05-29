@@ -25,7 +25,7 @@ export default function AdminPanel({
 }: AdminPanelProps) {
   const isAr = lang === 'ar';
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'settings' | 'products' | 'coupons' | 'moderators'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'products' | 'coupons' | 'moderators' | 'orders'>('orders');
 
   // Multi-moderator states
   const [adminAccounts, setAdminAccounts] = useState<AdminAccount[]>(() => {
@@ -82,6 +82,7 @@ export default function AdminPanel({
   const [prodGroup, setProdGroup] = useState('');
   const [prodMerchantPhone, setProdMerchantPhone] = useState('');
   const [prodSecretAddress, setProdSecretAddress] = useState('');
+  const [prodDiscount, setProdDiscount] = useState('');
 
   // Custom Dynamic Warehouses
   const [customWarehouses, setCustomWarehouses] = useState<{ id: string, name: string }[]>(() => {
@@ -378,7 +379,8 @@ export default function AdminPanel({
             videoUrl: prodVideo.trim() || undefined,
             deliveryGroupId: prodGroup.trim() || undefined,
             merchantPhone: prodMerchantPhone.trim() || undefined,
-            secretAddress: prodSecretAddress.trim() || undefined
+            secretAddress: prodSecretAddress.trim() || undefined,
+            discount: prodDiscount.trim() || undefined
           };
         }
         return p;
@@ -413,6 +415,7 @@ export default function AdminPanel({
         deliveryGroupId: prodGroup.trim() || undefined,
         merchantPhone: prodMerchantPhone.trim() || undefined,
         secretAddress: prodSecretAddress.trim() || undefined,
+        discount: prodDiscount.trim() || undefined,
         createdAt: new Date().toISOString()
       };
       onSaveProductsList([newProd, ...products]);
@@ -432,6 +435,7 @@ export default function AdminPanel({
     setProdGroup('');
     setProdMerchantPhone('');
     setProdSecretAddress('');
+    setProdDiscount('');
   };
 
   const handleEditProductClick = (p: Product) => {
@@ -447,6 +451,7 @@ export default function AdminPanel({
     setProdGroup(p.deliveryGroupId || '');
     setProdMerchantPhone(p.merchantPhone || '');
     setProdSecretAddress(p.secretAddress || '');
+    setProdDiscount(p.discount || '');
     
     // Jump to products editing forms
     setActiveTab('products');
@@ -562,7 +567,20 @@ export default function AdminPanel({
       {isOpen && (
         <div className="bg-[#12092e] border border-[#8b5cf6]/30 rounded-3xl mt-4 p-5 sm:p-6 shadow-2xl relative overflow-hidden">
           {/* Section Selector */}
-          <div className="flex bg-[#160e3d] p-1.5 rounded-2xl gap-2 overflow-x-auto scrollbar-none border border-[#8b5cf6]/20 mb-6">
+          <div className="flex bg-[#160e3d] p-1.5 rounded-2xl gap-2 overflow-x-auto scrollbar-none border border-[#8b5cf6]/20 mb-6 font-sans">
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`px-4.5 py-2 rounded-xl text-xs font-black whitespace-nowrap transition cursor-pointer relative ${
+                activeTab === 'orders' ? 'bg-[#ff007f] text-white shadow-lg' : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              📋 {isAr ? 'الطلبات الجديدة الفورية' : 'Incoming New Orders'}
+              {orders.filter(o => o.status === 'pending').length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white font-mono text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse border border-[#12092e]">
+                  {orders.filter(o => o.status === 'pending').length}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => setActiveTab('settings')}
               className={`px-4.5 py-2 rounded-xl text-xs font-black whitespace-nowrap transition cursor-pointer ${
@@ -594,19 +612,6 @@ export default function AdminPanel({
               }`}
             >
               👥 {isAr ? 'إضافة وتعديل المشرفين' : 'Add Moderators'}
-            </button>
-            <button
-              onClick={() => setActiveTab('orders')}
-              className={`px-4.5 py-2 rounded-xl text-xs font-black whitespace-nowrap transition cursor-pointer relative ${
-                activeTab === 'orders' ? 'bg-[#ff007f] text-white shadow-lg' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              📋 {isAr ? 'الطلبات والعمليات الفورية ' : 'Operations & Tracking'}
-              {orders.filter(o => o.status === 'pending').length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white font-mono text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse border border-[#12092e]">
-                  {orders.filter(o => o.status === 'pending').length}
-                </span>
-              )}
             </button>
           </div>
 
@@ -977,16 +982,31 @@ export default function AdminPanel({
                       onChange={(e) => setProdCategory(e.target.value)}
                       className="w-full text-xs p-3 bg-[#12092e] text-white border border-[#8b5cf6]/30 rounded-xl outline-none"
                     >
-                      <option value="clothes">👕 {isAr ? 'الملابس الرجالية والنسائية' : 'Clothes & Outfits'}</option>
-                      <option value="perfumes">💨 {isAr ? 'العطور والبخور والعود' : 'Perfumes & Incense'}</option>
-                      <option value="watches">⌚ {isAr ? 'ساعات فاخرة وأصلية' : 'Luxury Watches'}</option>
-                      <option value="electronics">💻 {isAr ? 'أجهزة إلكترونية وهواتف' : 'Electronics'}</option>
-                      <option value="home">🛋️ {isAr ? 'المنزل والأثاث متميز' : 'Home Furniture'}</option>
-                      <option value="games">🎮 {isAr ? 'ألعاب إلكترونية وبلايستيشن' : 'Games & Playstation'}</option>
+                      <option value="cars">🚗 {isAr ? 'السيارات' : 'Cars'}</option>
+                      <option value="home">🏠 {isAr ? 'المنزل' : 'Home'}</option>
+                      <option value="electronics">💻 {isAr ? 'إلكترونيات' : 'Electronics'}</option>
+                      <option value="perfumes">💨 {isAr ? 'العطور والبخور' : 'Fragrances'}</option>
+                      <option value="children">👶 {isAr ? 'أطفال' : 'Children'}</option>
+                      <option value="games">🎮 {isAr ? 'العاب' : 'Video Games'}</option>
+                      <option value="clothes">👕 {isAr ? 'الملابس' : 'Clothes'}</option>
+                      <option value="rent">🔑 {isAr ? 'إيجار' : 'Rent'}</option>
+                      <option value="others">👜 {isAr ? 'أخرى' : 'Others'}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-amber-300 block mb-1">
+                    <label className="text-[10px] font-bold text-[#f43f5e] block mb-1">
+                      {isAr ? 'نسبة التخفيض (اختياري، مثلا 15%):' : 'Discount pct (Optional, e.g. 15%):'}
+                    </label>
+                    <input
+                      type="text"
+                      value={prodDiscount}
+                      onChange={(e) => setProdDiscount(e.target.value)}
+                      placeholder="15%"
+                      className="w-full text-xs p-3 bg-[#12092e] text-rose-300 border border-rose-500/20 rounded-xl outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-amber-305 block mb-1">
                       {isAr ? 'هاتف التاجر/المورد للمنتج (خاص و سري):' : 'Private Merchant WhatsApp (Hidden):'}
                     </label>
                     <input
@@ -1460,7 +1480,7 @@ export default function AdminPanel({
                       required
                       value={newModName}
                       onChange={(e) => setNewModName(e.target.value)}
-                      placeholder="مثال: يوسف جناحي"
+                      placeholder="مثال: خاطر جناحي"
                       className="w-full text-xs p-3 bg-[#12092e] text-white border border-[#8b5cf6]/30 rounded-xl"
                     />
                   </div>

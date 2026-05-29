@@ -7,38 +7,57 @@ interface ProductsSectionProps {
   onAddToCart: (product: Product) => void;
   lang: 'ar' | 'en';
   deliveryFee?: number;
+  activeCategory?: string;
+  setActiveCategory?: (category: string) => void;
+  searchQuery?: string;
+  setSearchQuery?: (query: string) => void;
+  hideCategoryBar?: boolean;
 }
 
 export default function ProductsSection({
   products,
   onAddToCart,
   lang,
-  deliveryFee = 3
+  deliveryFee = 3,
+  activeCategory: externalActiveCategory,
+  setActiveCategory: externalSetActiveCategory,
+  searchQuery: externalSearchQuery,
+  setSearchQuery: externalSetSearchQuery,
+  hideCategoryBar = false
 }: ProductsSectionProps) {
   const isAr = lang === 'ar';
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<string>('all');
+  
+  const [localSearchQuery, localSetSearchQuery] = useState('');
+  const [localActiveCategory, localSetActiveCategory] = useState<string>('all');
+
+  const searchQuery = externalSearchQuery !== undefined ? externalSearchQuery : localSearchQuery;
+  const setSearchQuery = externalSetSearchQuery !== undefined ? externalSetSearchQuery : localSetSearchQuery;
+
+  const activeCategory = externalActiveCategory !== undefined ? externalActiveCategory : localActiveCategory;
+  const setActiveCategory = externalSetActiveCategory !== undefined ? externalSetActiveCategory : localSetActiveCategory;
+
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isAddedTip, setIsAddedTip] = useState<string | null>(null);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
 
   const categories = [
     { id: 'all', titleAr: 'الكل', titleEn: 'All', image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=150&auto=format&fit=crop&q=60', emoji: '🏬' },
+    { id: 'cars', titleAr: 'السيارات', titleEn: 'Cars', image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=150&auto=format&fit=crop&q=60', emoji: '🚗' },
+    { id: 'home', titleAr: 'المنزل', titleEn: 'Home', image: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=150&auto=format&fit=crop&q=60', emoji: '🏠' },
+    { id: 'electronics', titleAr: 'إلكترونيات', titleEn: 'Electronics', image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=150&auto=format&fit=crop&q=60', emoji: '💻' },
+    { id: 'perfumes', titleAr: 'العطور والبخور', titleEn: 'Fragrances', image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=150&auto=format&fit=crop&q=60', emoji: '💨' },
+    { id: 'children', titleAr: 'أطفال', titleEn: 'Children', image: 'https://images.unsplash.com/photo-1515488042361-404e9250afef?w=150&auto=format&fit=crop&q=60', emoji: '👶' },
+    { id: 'games', titleAr: 'العاب', titleEn: 'Video Games', image: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=60', emoji: '🎮' },
     { id: 'clothes', titleAr: 'الملابس', titleEn: 'Clothes', image: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=150&auto=format&fit=crop&q=60', emoji: '👕' },
-    { id: 'perfumes', titleAr: 'العطور', titleEn: 'Perfumes', image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=150&auto=format&fit=crop&q=60', emoji: '💨' },
-    { id: 'watches', titleAr: 'الساعات', titleEn: 'Watches', image: 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=150&auto=format&fit=crop&q=60', emoji: '⌚' },
-    { id: 'electronics', titleAr: 'الإلكترونيات', titleEn: 'Electronics', image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=150&auto=format&fit=crop&q=60', emoji: '💻' },
-    { id: 'home', titleAr: 'مستلزمات المنزل', titleEn: 'Home', image: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=150&auto=format&fit=crop&q=60', emoji: '🛋️' },
-    { id: 'games', titleAr: 'الألعاب', titleEn: 'Video Games', image: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=60', emoji: '🎮' }
+    { id: 'rent', titleAr: 'إيجار', titleEn: 'Rent', image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=150&auto=format&fit=crop&q=60', emoji: '🔑' },
+    { id: 'others', titleAr: 'أخرى', titleEn: 'Others', image: 'https://images.unsplash.com/photo-1517423568366-8b83523034fd?w=150&auto=format&fit=crop&q=60', emoji: '👜' }
   ];
 
   // Helper to format category title
   const getCategoryTitle = (catId: string) => {
     const found = categories.find(c => c.id === catId);
-    if (found) {
-      return isAr ? found.titleAr : found.titleEn;
-    }
-    return catId;
+    if (found) return isAr ? found.titleAr : found.titleEn;
+    return isAr ? 'أخرى' : 'Others';
   };
 
   const handleAddToCartWithAnimation = (product: Product) => {
@@ -57,7 +76,15 @@ export default function ProductsSection({
     const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           desc.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesCategory = activeCategory === 'all' || p.category === activeCategory;
+    const knownCategories = ['cars', 'home', 'electronics', 'perfumes', 'children', 'games', 'clothes', 'rent'];
+    let matchesCategory = true;
+    if (activeCategory === 'all') {
+      matchesCategory = true;
+    } else if (activeCategory === 'others') {
+      matchesCategory = p.category === 'others' || !knownCategories.includes(p.category);
+    } else {
+      matchesCategory = p.category === activeCategory;
+    }
 
     return matchesSearch && matchesCategory;
   });
@@ -71,60 +98,50 @@ export default function ProductsSection({
   return (
     <div className={`space-y-6 ${isAr ? 'text-right' : 'text-left'}`} dir={isAr ? 'rtl' : 'ltr'}>
       
-      {/* Search Header - Only Search Box */}
-      <div className="relative w-full max-w-xl mx-auto">
-        <span className={`absolute ${isAr ? 'right-4.5' : 'left-4.5'} top-1/2 -translate-y-1/2 text-zinc-400`}>
-          <Search size={17} />
-        </span>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={isAr ? 'ابحث عن عطر، لباس، أو ساعة فاخرة...' : 'Search for perfume, clothing, luxury watches...'}
-          className={`w-full text-xs sm:text-sm ${isAr ? 'pr-11 pl-4 text-right' : 'pl-11 pr-4 text-left'} py-3 bg-[#12092e]/80 text-white rounded-2xl border border-[#8b5cf6]/35 outline-none focus:border-[#d946ef] focus:ring-1 focus:ring-[#d946ef] transition duration-200 shadow-md placeholder-zinc-500`}
-        />
-      </div>
+      {!hideCategoryBar && (
+        <>
+          {/* Search Header - Only Search Box */}
+          <div className="relative w-full max-w-xl mx-auto">
+            <span className={`absolute ${isAr ? 'right-4.5' : 'left-4.5'} top-1/2 -translate-y-1/2 text-zinc-400`}>
+              <Search size={17} />
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isAr ? 'ابحث عن عطر، لباس، أو ساعة فاخرة...' : 'Search for perfume, clothing, luxury watches...'}
+              className={`w-full text-xs sm:text-sm ${isAr ? 'pr-11 pl-4 text-right' : 'pl-11 pr-4 text-left'} py-3 bg-[#12092e]/80 text-white rounded-2xl border border-[#8b5cf6]/35 outline-none focus:border-[#d946ef] focus:ring-1 focus:ring-[#d946ef] transition duration-200 shadow-md placeholder-zinc-500`}
+            />
+          </div>
 
-      {/* Category filters as visual square cards */}
-      <div className="flex gap-3 overflow-x-auto scrollbar-none pb-3 pt-1">
-        {categories.map((cat) => {
-          const isActive = activeCategory === cat.id;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`relative flex-none w-[76px] h-[76px] sm:w-[84px] sm:h-[84px] rounded-2xl overflow-hidden border transition-all duration-300 group cursor-pointer ${
-                isActive
-                  ? 'border-[#d946ef] rgb-glow shadow-[0_0_12px_rgba(217,70,239,0.4)] scale-95'
-                  : 'border-[#8b5cf6]/20 hover:border-[#8b5cf6]/60'
-              }`}
-            >
-              {/* Category picture background */}
-              <img
-                src={cat.image}
-                alt={isAr ? cat.titleAr : cat.titleEn}
-                className="absolute inset-0 w-full h-full object-cover transition duration-300 group-hover:scale-110 brightness-[0.4]"
-              />
-              {/* Overlay with subtle coloring to match branding */}
-              <div className="absolute inset-0 bg-[#06011a]/40 group-hover:bg-transparent transition-colors duration-300"></div>
-              {/* Dark gradient for text readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
-
-              {/* Text / Badge placement */}
-              <div className="absolute inset-x-1 bottom-1.5 flex flex-col items-center justify-center text-center">
-                <span className="text-base sm:text-lg mb-0.5 select-none">{cat.emoji}</span>
-                <span className="text-[9.5px] sm:text-[10px] font-extrabold text-white leading-tight tracking-tight drop-shadow-md">
-                  {isAr ? cat.titleAr : cat.titleEn}
-                </span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+          {/* Category filters as text-only modern chips without background images */}
+          <div className="flex gap-2 overflow-x-auto scrollbar-none pb-2.5 pt-1 font-sans">
+            {categories.map((cat) => {
+              const isActive = activeCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`flex-none px-4 py-2 rounded-full border text-xs font-black transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-[#d946ef] to-[#8b5cf6] text-white border-transparent shadow-[0_0_12px_rgba(217,70,239,0.4)] scale-95'
+                      : 'bg-[#160e3d]/70 text-zinc-350 border-[#8b5cf6]/20 hover:border-[#8b5cf6]/50 hover:bg-[#160e3d] hover:text-white'
+                  }`}
+                >
+                  <span className="text-[13px] leading-none shrink-0 select-none pb-0.5">{cat.emoji}</span>
+                  <span className="whitespace-nowrap">
+                    {isAr ? cat.titleAr : cat.titleEn}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* Products Grid */}
       {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
           {filteredProducts.map((p) => {
             const title = isAr ? p.title : (p.titleEn || p.title);
             const desc = isAr ? p.description : (p.descriptionEn || p.description);
@@ -134,7 +151,7 @@ export default function ProductsSection({
             return (
               <div 
                 key={p.id}
-                className="bg-[#12092e]/80 border border-[#8b5cf6]/20 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between hover:border-[#d946ef]/65 transition-all duration-300 relative group overflow-hidden shadow-lg hover:shadow-[#bfdbfe]/5"
+                className="bg-[#12092e]/80 border border-[#8b5cf6]/15 rounded-xl p-2 sm:p-2.5 flex flex-col justify-between hover:border-[#d946ef]/60 backdrop-blur-xs transition-all duration-300 relative group overflow-hidden shadow-md hover:shadow-[#bfdbfe]/5"
               >
                 {/* Square Card Cover image with absolute badges */}
                 <div 
@@ -149,7 +166,7 @@ export default function ProductsSection({
                   />
                   
                   {/* Floating badges overlay inside image */}
-                  <div className={`absolute top-1.5 ${isAr ? 'right-1.5' : 'left-1.5'} flex flex-col gap-1 z-10 pointers-events-none`}>
+                  <div className={`absolute top-1.5 ${isAr ? 'right-1.5' : 'left-1.5'} flex flex-col gap-1 z-10 pointer-events-none`}>
                     {hasVideo && (
                       <button
                         onClick={(e) => {
@@ -164,13 +181,9 @@ export default function ProductsSection({
                       </button>
                     )}
 
-                    {p.deliveryGroupId ? (
-                      <span className="bg-[#22c55e]/90 border border-emerald-500/20 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shadow-sm inline-block">
-                        📦 {isAr ? 'شحن مدمج:' : 'Combined:'} {p.deliveryGroupId}
-                      </span>
-                    ) : (
-                      <span className="bg-amber-500/90 border border-amber-600/30 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-sm inline-block animate-pulse">
-                        🚚 {isAr ? 'شحن منفرد:' : 'Solo Delivery:'} {deliveryFee.toFixed(3)} {isAr ? 'د.ب' : 'BHD'}
+                    {p.discount && (
+                      <span className="bg-rose-600/95 border border-rose-500/30 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shadow-sm inline-block">
+                        🏷️ {isAr ? 'تخفيض' : 'Sale'} {p.discount}
                       </span>
                     )}
                   </div>
@@ -306,41 +319,51 @@ export default function ProductsSection({
               {/* IMPORTANT: Link Products segment requested by user */}
               {/* "وعندما يقوم العميل بطلب احدهم يظهر له المنتجات الباقيه والتوصيل يكون مره وحده بسعر واحد" */}
               {selectedProduct.deliveryGroupId && (
-                <div className="space-y-2.5">
+                <div className="space-y-2.5 bg-[#1b124a]/20 p-3 rounded-2xl border border-[#8b5cf6]/10">
                   <span className="text-[11px] font-black text-[#5df6be] flex items-center gap-1">
                     <Sparkles size={11} className="text-[#5df6be] animate-bounce" />
-                    <span>{isAr ? 'منتجات بنفس الموقع لتوحيد الشحن (3 د.ب فقط):' : 'Bundle items with same combined shipping (3 BHD total):'}</span>
+                    <span>{isAr ? '📦 منتجات من نفس المستودع (وفر التوصيل):' : '📦 Products from the same warehouse (Combine Shipping):'}</span>
                   </span>
 
                   {getLinkedProducts(selectedProduct).length > 0 ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      {getLinkedProducts(selectedProduct).map(link => (
-                        <div 
-                          key={link.id}
-                          className="bg-[#1b124a]/60 border border-[#8b5cf6]/20 p-2.5 rounded-xl flex items-center justify-between gap-2 hover:border-[#d946ef]/60 transition duration-200"
-                        >
+                    <>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {getLinkedProducts(selectedProduct).map(link => (
                           <div 
-                            onClick={() => setSelectedProduct(link)}
-                            className="min-w-0 flex items-center gap-2 cursor-pointer hover:opacity-90 flex-1"
-                            title={isAr ? 'اضغط لعرض تفاصيل هذا المنتج 🔍' : 'Click to view details of this product 🔍'}
+                            key={link.id}
+                            className="bg-[#1b124a]/80 border border-[#8b5cf6]/20 p-2 rounded-xl flex items-center justify-between gap-2 hover:border-[#d946ef]/60 transition duration-200"
                           >
-                            <img src={link.image} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0 border border-[#8b5cf6]/10" />
-                            <div className="min-w-0">
-                              <h4 className="text-[10px] font-black text-white hover:text-[#d946ef] transition truncate leading-tight">{isAr ? link.title : (link.titleEn || link.title)}</h4>
-                              <p className="text-[9.5px] text-[#5df6be] font-mono font-black leading-none mt-1">{link.price} BHD</p>
-                              <span className="text-[7.5px] text-[#d946ef] font-bold block mt-0.5">{isAr ? 'عرض التفاصيل 🔍' : 'View Details 🔍'}</span>
+                            <div 
+                              onClick={() => setSelectedProduct(link)}
+                              className="min-w-0 flex items-center gap-2 cursor-pointer hover:opacity-95 flex-1"
+                              title={isAr ? 'اضغط لعرض تفاصيل هذا المنتج 🔍' : 'Click to view details of this product 🔍'}
+                            >
+                              <img src={link.image} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0 border border-[#8b5cf6]/15" />
+                              <div className="min-w-0">
+                                <h4 className="text-[9.5px] font-extrabold text-white hover:text-[#d946ef] transition truncate leading-tight">{isAr ? link.title : (link.titleEn || link.title)}</h4>
+                                <p className="text-[9px] text-[#5df6be] font-mono font-bold leading-none mt-0.5">{link.price} BHD</p>
+                              </div>
                             </div>
-                          </div>
 
-                          <button
-                            onClick={() => handleAddToCartWithAnimation(link)}
-                            className="p-1 px-2 rounded-lg bg-[#8b5cf6] text-white hover:bg-[#d946ef] text-[9.3px] font-black cursor-pointer shrink-0"
-                          >
-                            + {isAr ? 'أضف' : 'Add'}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                            <button
+                              onClick={() => handleAddToCartWithAnimation(link)}
+                              className="p-1 px-1.5 rounded-md bg-[#8b5cf6] text-white hover:bg-[#d946ef] text-[8px] sm:text-[9px] font-black cursor-pointer shrink-0"
+                            >
+                              + {isAr ? 'أضف' : 'Add'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Prominent warning notice banner requested by user */}
+                      <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-[#d946ef]/15 via-[#8b5cf6]/15 to-[#0b0424] border border-[#d946ef]/30 text-center shadow-[0_0_12px_rgba(217,70,239,0.15)] animate-pulse">
+                        <p className="text-[10px] sm:text-[11px] font-black text-amber-300 leading-normal">
+                          {isAr 
+                            ? '💡 أضف منتجات من نفس المستودع لتحصل عليها في شحنة واحدة وتوفر رسوم التوصيل الإضافية!'
+                            : '💡 Add products from the same warehouse to get them in one shipment and save on extra delivery fees!'}
+                        </p>
+                      </div>
+                    </>
                   ) : (
                     <p className="text-[10px] text-zinc-500">
                       {isAr ? 'باقي السلع المربوطة بمستودع التجميع تم بيعها بالكامل.' : 'All other linked product group stocks sold out details.'}

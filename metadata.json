@@ -1,6 +1,6 @@
 {
-  "name": "S&L",
-  "description": "متجر S&L المتميز بمملكة البحرين - عروض شحن وتوصيل مدمجة، وكوبونات خصم حصرية للمطاعم والمحلات المحلية.",
+  "name": "S&L Store",
+  "description": "متجر S&L الإلكتروني بمملكة البحرين - عروض شحن وتوصيل مدمجة للسيارات، المنزل، الإلكترونيات، العطور والبخور وكوبونات خصم للمحلات والخدمات.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

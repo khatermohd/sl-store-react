@@ -27,6 +27,7 @@ export interface Product {
   deliveryGroupId?: string; // Links products together for consolidated shipping (same group = 3 BHD once)
   merchantPhone?: string; // Uniquely stores the private supplier/merchant phone number for internal routing
   secretAddress?: string; // Secret internal warehouse address/info that only shows in the admin's invoice
+  discount?: string; // Optional discount percentage e.g. "15%" or "20%"
   createdAt: string;
 }
 

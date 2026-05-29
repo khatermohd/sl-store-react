@@ -120,52 +120,36 @@ async function startServer() {
 
   // Callmebot Telegram Notification Helper
   const sendCallmebotTelegramNotification = async (order: any) => {
-    const username = process.env.CALLMEBOT_TELEGRAM_USER || "@ShopSLbh";
-
-    if (!username) {
-      console.log("Telegram Notification: CALLMEBOT_TELEGRAM_USER is not set. Skipping Telegram notification.");
-      return;
-    }
+    const username = "@ShopSLbh";
 
     try {
-      const itemsList = (order.items || []).map((item: any, idx: number) => {
-        const title = item.titleAr || item.titleEn || item.title || "product";
-        return `▫️ *${title}* (الكمية: ${item.quantity} × ${item.price} د.ب)`;
-      }).join("\n");
-
-      const deliveryDesc = order.deliveryMethod === "delivery" 
-        ? `🚗 توصيل للمنزل\n📍 العنوان: ${order.customerAddress || "غير محدد"}` 
-        : "🏪 استلام من المحل";
-
-      const message = `🔔 *طلب جديد رقم: ${order.id}* 🔔\n` +
-        `━━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `👤 *بيانات العميل:*\n` +
-        `• الاسم: ${order.customerName}\n` +
-        `• الهاتف: ${order.customerPhone}\n` +
-        `• طريقة الاستلام: ${deliveryDesc}\n\n` +
-        `📦 *المنتجات المطلوبة:*\n` +
-        `${itemsList}\n\n` +
-        `💰 *الملخص المالي:*\n` +
-        `• قيمة المنتجات: ${order.itemsTotal} د.ب\n` +
-        `• رسوم الشحن: ${order.shippingFee} د.ب\n` +
-        `• الإجمالي الكلي: *${order.grandTotal} د.ب*\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━━\n` +
-        `💻 تم تسجيل وتحديث الطلب سحابياً بنجاح في Supabase.`;
-
+      const message = `📦 طلب جديد في المتجر! رقم الطلب: ${order.id} الإجمالي: ${order.grandTotal} BHD`;
       const cleanUsername = username.startsWith("@") ? username : `@${username}`;
-      const url = `https://api.callmebot.com/telegram/group.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`;
-
-      console.log(`Sending Telegram callmebot notification to ${cleanUsername}...`);
       
-      const response = await fetch(url);
-      if (response.ok) {
-        console.log("Telegram callmebot request succeeded!");
-      } else {
-        const errText = await response.text();
-        console.error(`Telegram Callmebot API failed: ${response.status} - ${errText}`);
+      // Let's call multiple possible formats/domains of CallMeBot Telegram service to ensure delivery under any configuration
+      const urls = [
+        `https://api.callmebot.com/telegram/group.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`,
+        `https://api.callmebot.com/telegram/sendMessage.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`,
+        `https://callmebot.com/telegram/group.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`,
+        `https://callmebot.com/telegram/sendMessage.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`
+      ];
+
+      for (const url of urls) {
+        try {
+          console.log(`Sending Telegram callmebot notification to ${cleanUsername} via URL: ${url}`);
+          const response = await fetch(url);
+          if (response.ok) {
+            console.log(`Telegram callmebot request succeeded for URL: ${url}`);
+          } else {
+            const errText = await response.text();
+            console.warn(`Telegram Callmebot request failed for URL: ${url} - Status: ${response.status} - ${errText}`);
+          }
+        } catch (e: any) {
+          console.error(`Error sending to Callmebot Telegram URL ${url}:`, e.message || e);
+        }
       }
     } catch (err: any) {
-      console.error("Failed to send Telegram callmebot notification:", err.message || err);
+      console.error("Failed to process Telegram callmebot notification:", err.message || err);
     }
   };
 

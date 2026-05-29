@@ -40,6 +40,7 @@ export default function CartSidebar({
   const [adminWpLink, setAdminWpLink] = useState('');
   const [clientWpLink, setClientWpLink] = useState('');
   const [finalClientPhone, setFinalClientPhone] = useState('');
+  const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
   // Sidebar Tabs Layout
   const [sidebarTab, setSidebarTab] = useState<'cart' | 'history'>('cart');
@@ -356,6 +357,7 @@ export default function CartSidebar({
     
     setAdminWpLink(finalAdminUrl);
     setClientWpLink(finalClientUrl);
+    setCompletedOrder(newOrder);
     setCheckoutComplete(true);
   };
 
@@ -697,57 +699,127 @@ export default function CartSidebar({
             )}
           </div>
         ) : checkoutComplete ? (
-          /* Quiet Checkout Successful view - Elegant, showing the Order-ID, with no WhatsApp redirects or immediate prep msgs */
-          <div className="flex-1 p-6 overflow-y-auto space-y-6 text-center flex flex-col justify-between">
-            <div className="space-y-6">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-[#5df6be] border border-[#5df6be]/30 mx-auto animate-pulse">
-                <CheckCircle size={32} />
+          /* Quiet Checkout Successful view - Elegant Invoice with no WhatsApp button or banner */
+          <div className="flex-1 p-5 overflow-y-auto space-y-5 text-center flex flex-col justify-between" dir="rtl">
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-[#5df6be] border border-[#5df6be]/30 mx-auto animate-pulse shrink-0">
+                <CheckCircle size={24} />
               </div>
               
-              <div className="space-y-2">
-                <span className="text-[14px] text-[#5df6be] uppercase tracking-widest block font-black">
+              <div className="space-y-1">
+                <span className="text-[12px] text-[#5df6be] uppercase tracking-widest block font-black">
                   {isAr ? '✓ تم تسجيل طلبك بنجاح!' : '✓ ORDER PLACED SUCCESSFULLY!'}
                 </span>
-                <span className="text-xs text-zinc-300 block">
-                  {isAr ? 'رقم طلبك وهو:' : 'Your order number is:'}
-                </span>
-                <span className="text-4xl sm:text-5xl font-black text-amber-300 tracking-wider font-mono block select-all drop-shadow-[0_0_12px_rgba(245,158,11,0.2)]">
-                  {generatedOrderNo}
+                <span className="text-[10px] text-zinc-400 block pb-1 border-b border-[#8b5cf6]/20">
+                  {isAr ? 'تم استلام وتوثيق طلبك، شكراً لتعاملك معنا!' : 'Your order has been recorded successfully!'}
                 </span>
               </div>
 
-              {/* Quiet Descriptive Banner - Informing that checkout succeeded with WhatsApp notify control */}
-              <div className="bg-[#160e3d]/80 p-5 rounded-2xl border border-emerald-500/10 text-xs text-zinc-350 leading-relaxed text-right space-y-3.5 shadow-xl" dir="rtl">
-                <p className="font-extrabold text-[#5df6be] text-center text-[12.5px] flex items-center justify-center gap-1.5">
-                  <span>✨</span>
-                  <span>{isAr ? 'تم تسجيل وتوثيق طلبك بنجاح' : 'Order Registered Successfully'}</span>
-                </p>
-                <p className="text-[10.5px] text-zinc-300 text-center leading-normal">
-                  {isAr 
-                    ? 'لقد تم حفظ هذا الطلب في قاعدة بيانات المتجر بنجاح. يرجى الضغط بالأسفل لإرسال الفاتورة وتأكيد الحجز فوراً مع مندوب الإدارة لتجهيزه بالسرعة القصوى!'
-                    : 'Your transaction was successfully loaded onto our databases. Please tap below to broadcast your invoice receipt on WhatsApp to begin immediate packing!'}
-                </p>
+              {/* Beautiful Visual Invoice Card */}
+              <div className="relative bg-[#160e3d]/90 border border-[#8b5cf6]/40 rounded-2xl p-4 text-right space-y-3.5 shadow-xl select-none" dir="rtl">
+                {/* Invoice Header */}
+                <div className="flex justify-between items-center pb-2.5 border-b border-dashed border-[#8b5cf6]/30">
+                  <div>
+                    <h4 className="text-xs font-black text-white">{isAr ? 'فاتورة شراء موثقة' : 'Receipt / Invoice'}</h4>
+                    <span className="text-[9px] text-zinc-400 font-mono">
+                      {completedOrder ? new Date(completedOrder.createdAt).toLocaleString('ar-BH') : new Date().toLocaleString('ar-BH')}
+                    </span>
+                  </div>
+                  <div className="text-left">
+                    <span className="text-[9px] text-[#bfdbfe]/75 block uppercase font-bold">{isAr ? 'رقم الطلب' : 'ORDER ID'}</span>
+                    <span className="text-sm font-black text-amber-300 font-mono tracking-wider">
+                      {completedOrder ? completedOrder.id : generatedOrderNo}
+                    </span>
+                  </div>
+                </div>
 
-                <div className="pt-1.5">
-                  <a
-                    href={clientWpLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-2 bg-[#25d366] hover:bg-[#1ebd53] active:scale-95 transition-all text-white text-xs font-black py-3 px-4 rounded-xl shadow-lg ring-4 ring-emerald-500/15 text-center select-none"
-                  >
-                    <span>🟢</span>
-                    <span>{isAr ? 'إرسال الفاتورة وتنبيه المتجر عبر الواتساب' : 'Send receipt with WhatsApp Notification'}</span>
-                  </a>
+                {/* Customer Info segment */}
+                <div className="text-[10.5px] space-y-1.5 text-zinc-300 border-b border-dashed border-[#8b5cf6]/30 pb-2.5">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-450">{isAr ? 'اسم العميل:' : 'Customer Name:'}</span>
+                    <span className="font-extrabold text-white">{completedOrder ? completedOrder.customerName : customerName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-450">{isAr ? 'هاتف التواصل:' : 'Phone Number:'}</span>
+                    <span className="font-bold text-white font-mono" dir="ltr">{completedOrder ? completedOrder.customerPhone : customerPhone}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-450">{isAr ? 'طريقة الاستلام:' : 'Delivery Plan:'}</span>
+                    <span className="font-bold text-white">
+                      {completedOrder?.deliveryMethod === 'delivery' ? (isAr ? 'توصيل للمنزل 🚗' : 'Home Delivery 🚗') : (isAr ? 'استلام من المحل 🏪' : 'Pickup at Store 🏪')}
+                    </span>
+                  </div>
+                  {completedOrder?.deliveryMethod === 'delivery' && (completedOrder.customerAddress || customerAddress) && (
+                    <div className="flex flex-col text-right pt-0.5">
+                      <span className="text-zinc-450 mb-0.5">{isAr ? 'العنوان المعتمد لعنوانك:' : 'Delivery Address:'}</span>
+                      <span className="bg-[#12092e]/60 p-1.5 rounded-lg border border-[#cbd5e1]/10 text-[9.5px] leading-relaxed text-zinc-300">
+                        {completedOrder ? completedOrder.customerAddress : customerAddress}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Items loop list */}
+                <div className="space-y-2 border-b border-dashed border-[#8b5cf6]/30 pb-2.5">
+                  <span className="text-[9px] font-black text-[#5df6be] uppercase block">{isAr ? 'تفاصيل السلع المشتراة:' : 'Billed Items:'}</span>
+                  <div className="max-h-[145px] overflow-y-auto space-y-1.5 pr-0.5">
+                    {(completedOrder ? completedOrder.items : cartItems.map(c => ({
+                      titleAr: c.product.title,
+                      titleEn: c.product.titleEn || c.product.title,
+                      price: c.product.price,
+                      quantity: c.quantity
+                    }))).map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-[10px] leading-tight">
+                        <div className="text-left font-mono text-zinc-350">
+                          <span>{item.quantity} × {item.price.toFixed(3)}</span>
+                          <span className="text-[9px] mr-0.5">د.ب</span>
+                        </div>
+                        <span className="text-zinc-100 truncate max-w-[190px] font-medium text-right">
+                          {isAr ? item.titleAr : (item.titleEn || item.titleAr)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Financial Totals */}
+                <div className="space-y-1 text-[11px] text-zinc-300">
+                  <div className="flex justify-between font-medium">
+                    <span className="text-zinc-450">{isAr ? 'إجمالي قيمة المنتجات:' : 'Subtotal:'}</span>
+                    <span className="font-mono">{completedOrder ? completedOrder.itemsTotal.toFixed(3) : itemsTotal.toFixed(3)} د.ب</span>
+                  </div>
+                  
+                  <div className="flex justify-between font-medium">
+                    <span className="text-zinc-450">{isAr ? 'تكاليف التوصيل المضافة:' : 'Delivery Fee:'}</span>
+                    <span className="font-mono">
+                      {completedOrder 
+                        ? (completedOrder.shippingFee === 0 ? (isAr ? 'استلام مجاني' : '0.000 د.ب') : `${completedOrder.shippingFee.toFixed(3)} د.ب`)
+                        : (calculatedShipping === 0 ? (isAr ? 'استلام مجاني' : '0.000 د.ب') : `${calculatedShipping.toFixed(3)} د.ب`)
+                      }
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-xs font-black text-white pt-2 border-t border-[#cbd5e1]/10">
+                    <span className="text-[#bfdbfe]/90">{isAr ? 'المجموع المستحق الكلي:' : 'Total Amount:'}</span>
+                    <span className="font-mono text-amber-300 text-[13px] tracking-wide">
+                      {completedOrder ? completedOrder.grandTotal.toFixed(3) : grandTotal.toFixed(3)} د.ب
+                    </span>
+                  </div>
+                </div>
+
+                {/* Certified Stamp */}
+                <div className="absolute right-3.5 bottom-12 opacity-[0.06] select-none pointer-events-none transform -rotate-12 border-4 border-emerald-500 text-emerald-500 font-black text-center px-4 py-1.5 rounded-xl uppercase text-xs tracking-wider">
+                  S&L APPROVED
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               <button
                 onClick={() => {
                   setSidebarTab('history');
                 }}
-                className="w-full bg-[#1b124a] hover:bg-emerald-600 border border-emerald-500/30 text-[#5df6be] font-black py-3 px-3 rounded-xl text-xs transition active:scale-95 cursor-pointer shadow-md text-center flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] hover:opacity-95 text-white font-black py-3 px-3 rounded-xl text-xs transition active:scale-95 cursor-pointer shadow-md text-center flex items-center justify-center gap-2"
               >
                 <span>📋</span>
                 <span>{isAr ? 'انتقل لتتبع تفاصيل وحالة هذا الطلب الآن' : 'Switch to Tracking Sheet'}</span>
@@ -759,13 +831,14 @@ export default function CartSidebar({
                   setCustomerName('');
                   setCustomerPhone('');
                   setCustomerAddress('');
+                  setCompletedOrder(null);
                   setCheckoutComplete(false);
                   setSidebarTab('cart');
                   onClose();
                 }}
-                className="w-full bg-gradient-to-r from-rose-600/20 to-rose-700/30 border border-rose-500/20 text-rose-300 font-extrabold py-2.5 rounded-xl text-[11px] hover:bg-rose-600/30 transition cursor-pointer"
+                className="w-full bg-[#160e3d] hover:bg-[#1b124a] text-zinc-350 font-extrabold py-3 rounded-xl text-xs transition cursor-pointer border border-[#cbd5e1]/10"
               >
-                🧹 {isAr ? 'تصفير السلّة وبدء تسوّق جديد' : 'Flush Basket & Return'}
+                🧹 {isAr ? 'تصفير السلّة والعودة لبدء شراء جديد' : 'Flush Basket & Return'}
               </button>
             </div>
           </div>

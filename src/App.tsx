@@ -7,6 +7,8 @@ import OffersSection from './components/OffersSection';
 import CartSidebar from './components/CartSidebar';
 import AdminPanel from './components/AdminPanel';
 import LoginScreen from './components/LoginScreen';
+import BottomNavBar from './components/BottomNavBar';
+import SearchModal from './components/SearchModal';
 
 import { INITIAL_PRODUCTS, INITIAL_COUPONS, DEFAULT_STORE_SETTINGS } from './data';
 
@@ -104,8 +106,11 @@ export default function App() {
 
   // UI state toggles
   const [activeTab, setActiveTab] = useState<'products' | 'coupons'>('products');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   // Sync state with localStorage
   useEffect(() => {
@@ -168,7 +173,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[#0b0424] text-white selection:bg-[#d946ef] selection:text-white font-sans transition-all duration-300">
+    <div className="min-h-screen flex flex-col justify-between bg-[#0b0424] text-white selection:bg-[#d946ef] selection:text-white font-sans transition-all duration-300 pb-20">
       
       {/* Background decorations */}
       <div className="fixed inset-0 pointer-events-none select-none overflow-hidden z-0">
@@ -178,16 +183,8 @@ export default function App() {
 
       <div className="relative z-10 w-full flex flex-col">
         
-        {/* Dynamic advertising space at the top */}
-        {storeSettings.topAd && storeSettings.topAd.isActive && (
-          <FeaturedAd 
-            ad={storeSettings.topAd} 
-            lang={lang} 
-          />
-        )}
-
-        {/* Global Navigation Header */}
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 mt-3">
+        {/* Row 1 + 2 + 3: AliExpress Brand Banner Header, Search Box & Category Tabs */}
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 mt-4">
           <Header 
             lang={lang}
             setLang={handleToggleLang}
@@ -200,12 +197,28 @@ export default function App() {
             storeLogoUrl={storeSettings.storeLogoUrl}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
+            activeCategory={activeCategory}
+            setActiveCategory={setActiveCategory}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
           />
         </div>
 
+        {/* Re-ordered Row 4: Custom Ad Space (الاعلان المخصص) immediately underneath Categories */}
+        {storeSettings.topAd && storeSettings.topAd.isActive && (
+          <div className="mt-4">
+            <FeaturedAd 
+              ad={storeSettings.topAd} 
+              lang={lang} 
+            />
+          </div>
+        )}
+
+
+
         {/* Dynamic Administrator Controls - Visible only when logged in as admin */}
         {user?.isAdmin && (
-          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 mt-5 animate-in slide-in-from-top-4 duration-300">
+          <div id="admin-settings-section" className="max-w-7xl mx-auto w-full px-4 sm:px-6 mt-5 animate-in slide-in-from-top-4 duration-300">
             <AdminPanel 
               user={user}
               storeSettings={storeSettings}
@@ -221,7 +234,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Active Section Content */}
+        {/* Re-ordered Row 5: Store Products Section (المنتجات) list below Ad */}
         <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-5 flex-1 relative">
           {activeTab === 'products' ? (
             <ProductsSection 
@@ -229,6 +242,11 @@ export default function App() {
               onAddToCart={handleAddToCart}
               lang={lang}
               deliveryFee={storeSettings.deliveryFee}
+              activeCategory={activeCategory}
+              setActiveCategory={setActiveCategory}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              hideCategoryBar={true}
             />
           ) : (
             <OffersSection 
@@ -263,11 +281,11 @@ export default function App() {
 
       {/* VIP S&L Footer section */}
       <footer className="relative bg-[#08021a] border-t border-[#8b5cf6]/25 mt-16 py-10 text-zinc-400 z-10" dir={isAr ? 'rtl' : 'ltr'}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-right">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           
           {/* Section 1: Branding and description */}
-          <div className={`space-y-4 ${isAr ? 'text-right' : 'text-left'}`}>
-            <div className="inline-flex items-center gap-2">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 justify-center">
               <span className="font-sans font-black text-2xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[#d946ef] to-[#bfdbfe]">
                 {storeSettings.storeName}
               </span>
@@ -275,71 +293,11 @@ export default function App() {
                 {isAr ? 'البحرين 🇧🇭' : 'Bahrain 🇧🇭'}
               </span>
             </div>
-            <p className="text-xs text-zinc-350 leading-relaxed font-normal">
+            <p className="text-xs text-zinc-350 leading-relaxed font-normal max-w-xl mx-auto">
               {isAr 
-                ? 'متجر S&L هو وجهتك الرقمية الذكية المتكاملة بمملكة البحرين لشراء وتوصيل الملابس، العطور الفخمة، والساعات الأنيقة بنظم دمج وتجميع الشحن المتقدمة.'
-                : 'S&L Store is your leading destination in Bahrain for clothing, premium fragrances, watches, and smart hardware using customized combined warehouse shipping.'}
+                ? 'متجر S&L هو وجهتك الرقمية الذكية المتكاملة بمملكة البحرين لشراء وتوصيل كبرى العلامات والمنتجات من السيارات والمنزل والإلكترونيات والعطور والبخور.'
+                : 'S&L Store is your leading destination in Bahrain for elite categories spanning Cars, Home, Electronics, Fragrances, Clothes, and specialized products.'}
             </p>
-          </div>
-
-          {/* Section 2: Contact, Location & Hours */}
-          <div className={`space-y-3 ${isAr ? 'text-right' : 'text-left'}`}>
-            <h4 className="font-extrabold text-white text-xs sm:text-sm">
-              {isAr ? 'فرع الإدارة العامة والتواصل 📞' : 'General Management 📞'}
-            </h4>
-            <div className="space-y-2 text-xs text-zinc-350">
-              <div className="flex items-center gap-2">
-                <span>📍</span>
-                <span>{isAr ? 'ضاحية السيف، المنامة، مملكة البحرين' : 'Seef District, Manama, Kingdom of Bahrain'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>📞</span>
-                <span>{isAr ? 'هاتف خدمة العملاء:' : 'Sales Support:'} {storeSettings.socials?.phone || '+973 39442011'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>✉️</span>
-                <span>info@sl-bahrain.com</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Social networking references */}
-          <div className={`space-y-3 ${isAr ? 'text-right' : 'text-left'}`}>
-            <h4 className="font-extrabold text-white text-xs sm:text-sm">
-              {isAr ? 'تابع حساباتنا الاجتماعية الرسمية📱' : 'S&L Official Channels 📱'}
-            </h4>
-            <div className="flex flex-wrap gap-2 pt-1">
-              {storeSettings.socials?.instagram && (
-                <a 
-                  href={`https://instagram.com/${storeSettings.socials.instagram}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-[#1b124a] hover:bg-[#d946ef] hover:text-white border border-[#8b5cf6]/20 px-3 py-1.5 rounded-xl text-[10.5px] font-black text-rose-300 transition"
-                >
-                  📸 Instagram
-                </a>
-              )}
-              {storeSettings.socials?.snapchat && (
-                <a 
-                  href={`https://snapchat.com/add/${storeSettings.socials.snapchat}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-[#1b124a] hover:bg-[#eab308] hover:text-[#0b0424] border border-[#8b5cf6]/20 px-3 py-1.5 rounded-xl text-[10.5px] font-black text-yellow-300 transition"
-                >
-                  👻 Snapchat
-                </a>
-              )}
-              {storeSettings.socials?.whatsapp && (
-                <a 
-                  href={`https://wa.me/973${storeSettings.socials.whatsapp}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-[#1b124a] hover:bg-emerald-600 hover:text-white border border-[#8b5cf6]/20 px-3 py-1.5 rounded-xl text-[10.5px] font-black text-emerald-300 transition"
-                >
-                  💚 WhatsApp
-                </a>
-              )}
-            </div>
           </div>
 
         </div>
@@ -348,7 +306,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-8 pt-6 border-t border-[#8b5cf6]/15 flex flex-col sm:flex-row items-center justify-between text-[11px] text-zinc-500 gap-4">
           <div className="flex items-center gap-1">
             <span>🎗️</span>
-            <span>{isAr ? `جميع الحقوق محفوظة لمتجر S&L المتميز © ${new Date().getFullYear()}` : `All Rights Reserved to S&L Premium Store © ${new Date().getFullYear()}`}</span>
+            <span>{isAr ? `جميع الحقوق محفوظة لمتجر S&L © ${new Date().getFullYear()}` : `All Rights Reserved to S&L STORE © ${new Date().getFullYear()}`}</span>
           </div>
           <div className="flex gap-4 items-center flex-wrap justify-center sm:justify-end">
             <a href="#" className="hover:text-white transition">{isAr ? 'شروط التوصيل والاستلام' : 'Terms & Conditions'}</a>
@@ -368,6 +326,45 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Dynamic bottom navigation bar */}
+      <BottomNavBar 
+        lang={lang}
+        cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
+        onHomeClick={() => {
+          setActiveTab('products');
+          setActiveCategory('all');
+          setSearchModalOpen(false);
+        }}
+        onSearchClick={() => setSearchModalOpen(true)}
+        onCartClick={() => setCartOpen(true)}
+        onAccountClick={() => {
+          if (user) {
+            const el = document.getElementById('admin-settings-section');
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth' });
+            } else {
+              alert(isAr ? 'أنت مسجل كمسؤول، يرجى تصفح لوحة التحكم بالصفحة.' : 'You are logged in as admin. Browse the panel below.');
+            }
+          } else {
+            setLoginOpen(true);
+          }
+        }}
+        activeTab={activeTab}
+        activeCategory={activeCategory}
+        isSearchActive={searchModalOpen}
+      />
+
+      {/* Real-time search screen overlay */}
+      <SearchModal 
+        isOpen={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        lang={lang}
+        products={products}
+        onAddToCart={handleAddToCart}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+      />
 
     </div>
   );
