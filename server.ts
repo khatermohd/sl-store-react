@@ -137,8 +137,9 @@ async function startServer() {
 
   // Callmebot WhatsApp Notification Helper
   const sendCallmebotNotification = async (order: any) => {
-    const phone = process.env.CALLMEBOT_PHONE || "97337120456";
-    const apiKey = process.env.CALLMEBOT_API_KEY || "";
+    const settings = loadSettings();
+    const phone = settings.socials?.whatsapp || process.env.CALLMEBOT_PHONE || "97366603354";
+    const apiKey = process.env.CALLMEBOT_API_KEY || settings.callmebotApiKey || "";
 
     if (!apiKey) {
       console.log("WhatsApp Notification: CALLMEBOT_API_KEY is not set. Skipping WhatsApp callmebot notification.");
@@ -334,6 +335,41 @@ ${listItems}
     saveCoupons(coupons);
     console.log("Successfully cached coupons list on the server side.");
     res.json({ success: true, count: coupons.length });
+  });
+
+  // API: Test CallMeBot WhatsApp Notification
+  app.post("/api/test-whatsapp", async (req, res) => {
+    const { apiKey, phone } = req.body;
+    const settings = loadSettings();
+    const finalPhone = phone || settings.socials?.whatsapp || process.env.CALLMEBOT_PHONE || "97366603354";
+    const finalApiKey = apiKey || settings.callmebotApiKey || "";
+
+    if (!finalApiKey) {
+      return res.status(400).json({ error: "لا يوجد مفتاح API Key مفعّل. يرجى إدخال المفتاح أولاً وحفظ الإعدادات." });
+    }
+
+    try {
+      const message = `⚙️ *فحص الاتصال لمتجر S&L المتميز* ⚙️\n\n✓ تم ربط خدمة الواتساب بالمتجر بنجاح!\nالخدمة جاهزة الآن لإرسال تفاصيل وإشعارات الطلبات الجديدة في الخلفية. 🇧🇭`;
+      const targetPhone = finalPhone.startsWith("+") ? finalPhone.substring(1) : finalPhone;
+      const cleanPhone = targetPhone.replace(/\D/g, "");
+      
+      const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(cleanPhone)}&apikey=${encodeURIComponent(finalApiKey)}&text=${encodeURIComponent(message)}`;
+      
+      console.log(`Testing WhatsApp callmebot notification to ${cleanPhone}...`);
+      const response = await fetch(url);
+      const resText = await response.text();
+      
+      if (response.ok) {
+        if (resText.toLowerCase().includes("error") || resText.toLowerCase().includes("invalid")) {
+          return res.status(400).json({ error: `فشل الاتصال من CallMeBot: ${resText}` });
+        }
+        return res.json({ success: true, message: "تم إرسال رسالة تجريبية بنجاح على الواتساب الخاص بك!" });
+      } else {
+        return res.status(response.status).json({ error: `استجابة غير صالحة من المزود (${response.status}): ${resText}` });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ error: `فشل إرسال الطلب: ${err.message}` });
+    }
   });
 
   // API: Dynamic Telegram notification forwarder (Supporting direct custom Telegram Bot + CallMeBot fallback)

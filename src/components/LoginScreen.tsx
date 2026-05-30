@@ -11,6 +11,18 @@ interface LoginScreenProps {
 export default function LoginScreen({ onLogin, onClose, lang }: LoginScreenProps) {
   const isAr = lang === 'ar';
   
+  // Clean phone number for WhatsApp redirects
+  const getCleanPhoneForWa = (phone: string) => {
+    let clean = phone.replace(/\s+/g, '').replace(/[+\-()]/g, '');
+    if (clean.startsWith('00')) {
+      clean = clean.substring(2);
+    }
+    if (clean.length === 8) {
+      clean = '973' + clean;
+    }
+    return clean;
+  };
+  
   // Modes: 'otp' | 'admin'
   const [activeTab, setActiveTab] = useState<'otp' | 'admin'>('otp');
   
@@ -71,15 +83,12 @@ export default function LoginScreen({ onLogin, onClose, lang }: LoginScreenProps
       setOtpSent(true);
       setTimer(59); // 1 minute cooldown
       setLoading(false);
-      setShowSimulatedSms(true);
-      setSuccess(isAr ? '💬 جاري توليد رمز الأمان وإرسال رسالة نصية قصيرة SMS...' : '💬 Generating security token and dispatching verification SMS...');
+      setShowSimulatedSms(false);
+      setSuccess(isAr 
+        ? '💬 تم توليد الرمز وجاهز للتأكيد عبر الواتساب الخاص بك!' 
+        : '💬 Your security verification code is generated!');
 
-      // Auto hide the simulated SMS popup after 8 seconds
-      setTimeout(() => {
-        setShowSimulatedSms(false);
-      }, 9500);
-
-    }, 1100);
+    }, 800);
   };
 
   // Handler to verify the OTP and log the customer in
@@ -226,35 +235,6 @@ export default function LoginScreen({ onLogin, onClose, lang }: LoginScreenProps
         onClick={onClose}
       ></div>
 
-      {/* Simulated SMS Toast alert */}
-      {showSimulatedSms && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 max-w-sm w-full bg-slate-900 text-white p-4.5 rounded-2xl shadow-2xl border border-slate-700/55 z-[150] flex items-start gap-3 animate-bounce font-sans text-right" dir="rtl">
-          <div className="bg-amber-400 p-2 text-slate-900 rounded-xl shrink-0 mt-0.5">
-            <MessageSquare size={18} />
-          </div>
-          <div className="flex-1 space-y-1">
-            <div className="flex justify-between items-center text-[10px] text-zinc-400 font-bold">
-              <span>{isAr ? 'رسالة قصيرة SMS تجريبية' : 'SMS Notification Simulation'}</span>
-              <span>{isAr ? 'الآن' : 'now'}</span>
-            </div>
-            <p className="text-xs font-black text-slate-100 leading-relaxed leading-snug">
-              {isAr 
-                ? `💬 رمز التحقق المرسل لك لمتجر S&L البحرين لتسجيل حسابك هو: [${generatedOtp}]` 
-                : `💬 Verification code sent to your phone for S&L Store Bahrain is: [${generatedOtp}]`}
-            </p>
-            <span className="text-[9px] block text-amber-300 font-bold">
-              {isAr ? '💡 هذا الصندوق يقوم بمحاكاة إرسال الرمز لبلدك، يرجى كتابته لتنشيط حسابك.' : '💡 Copy & enter this authentication code above.'}
-            </span>
-          </div>
-          <button 
-            onClick={() => setShowSimulatedSms(false)}
-            className="text-zinc-500 hover:text-white p-1"
-          >
-            <X size={12} />
-          </button>
-        </div>
-      )}
-
       {/* Login Card */}
       <div 
         className="relative max-w-md w-full bg-white border border-slate-200 text-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 font-sans"
@@ -374,20 +354,39 @@ export default function LoginScreen({ onLogin, onClose, lang }: LoginScreenProps
                   className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black py-3 rounded-xl text-xs sm:text-sm transition transform active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-md shadow-indigo-100"
                 >
                   <Sparkles size={14} />
-                  <span>{loading ? (isAr ? 'جاري الإرسال للتجربة...' : 'Sending request...') : (isAr ? 'إرسال واستقبال رمز التحقق SMS 📱' : 'Send Verification OTP SMS 📱')}</span>
+                  <span>{loading ? (isAr ? 'جاري الإرسال...' : 'Sending request...') : (isAr ? 'طلب رمز التفعيل المؤقت ⚡' : 'Request Security Code ⚡')}</span>
                 </button>
               </form>
             ) : (
               /* Entering OTP Code */
               <form onSubmit={handleVerifyOtp} className="space-y-4">
-                <div className="space-y-2 text-right">
-                  <div className="bg-indigo-50/70 p-3 rounded-2xl border border-indigo-100 text-[11px] text-indigo-800 leading-relaxed">
-                    <p className="font-extrabold">📱 {isAr ? `تأكيد رمز الهاتف رقم: ${phoneNumber}` : `Verification challenge on ${phoneNumber}`}</p>
-                    <p>{isAr ? 'يرجى إدخال الرمز المكون من 4 أرقام الذي تلقيته لتنشيط هويتك بالمحافظة.' : 'Please keys-in the 4 digit OTP digits below to activate your ledger.'}</p>
+                <div className="space-y-3 text-right">
+                  <div className="bg-emerald-50/70 p-4.5 rounded-2xl border border-emerald-100 text-[11px] text-emerald-900 leading-relaxed space-y-2">
+                    <p className="font-extrabold text-sm text-emerald-800 flex items-center gap-1">
+                      <span>💬 {isAr ? `تفعيل رقم هاتف العميل: ${phoneNumber}` : `WhatsApp verification for ${phoneNumber}`}</span>
+                    </p>
+                    <p className="text-[10px]">
+                      {isAr 
+                        ? 'أهلاً بك! لتأكيد هوية هاتفك والتفعيل الفوري، يرجى النقر على الزر الأخضر أدناه لفتح شات الواتساب الخاص بك لتلقي الرمز، ثم انسخه وأدخله بالأسفل لتنشيط حسابك بالكامل:' 
+                        : 'Welcome! To verify your identity and activate your session, please click the green WhatsApp button below to open your chat and receive the verification code. Then copy and insert the code below:'}
+                    </p>
+
+                    {/* WhatsApp Action Button with requested text format */}
+                    <a
+                      href={`https://wa.me/${getCleanPhoneForWa(phoneNumber)}?text=${encodeURIComponent(
+                        `رمز التحقق الخاص بك في موقع S&L (${generatedOtp})`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-[11px] text-center transition transform active:scale-95 flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-150 cursor-pointer"
+                    >
+                      <MessageSquare size={13} />
+                      <span>{isAr ? 'احصل على الرمز عبر الواتساب الخاص بك 💬' : 'Get Code via your WhatsApp 💬'}</span>
+                    </a>
                   </div>
 
                   <label className="text-[11px] font-bold text-slate-600 block mt-3">
-                    {isAr ? 'أدخل الرمز المستلم (4 أرقام):' : 'Enter received 4-digit code:'}
+                    {isAr ? 'أدخل الرمز المكون من 4 أرقام هنا للإتمام والتوثيق:' : 'Enter the 4-digit code below to submit:'}
                   </label>
                   
                   <input
@@ -430,7 +429,7 @@ export default function LoginScreen({ onLogin, onClose, lang }: LoginScreenProps
 
                   <button
                     type="submit"
-                    className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-xs sm:text-sm transition transform active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+                    className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-xl text-xs sm:text-sm transition transform active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <Check size={14} />
                     <span>{isAr ? 'التحقق وتسجيل الدخول 🔓' : 'Verify & Log In 🔓'}</span>
@@ -448,11 +447,11 @@ export default function LoginScreen({ onLogin, onClose, lang }: LoginScreenProps
                       setTimer(59);
                       const code = Math.floor(1000 + Math.random() * 9000).toString();
                       setGeneratedOtp(code);
-                      setShowSimulatedSms(true);
+                      setShowSimulatedSms(false);
                     }}
-                    className="w-full text-[10px] text-indigo-650 hover:underline text-center cursor-pointer block font-bold"
+                    className="w-full text-[10px] text-indigo-600 hover:underline text-center cursor-pointer block font-bold"
                   >
-                    {isAr ? '🔄 إرسال الرمز مرة أخرى للهاتف' : '🔄 Resend OTP Code'}
+                    {isAr ? '🔄 توليد رمز جديد للواتساب' : '🔄 Generate new WhatsApp code'}
                   </button>
                 )}
               </form>

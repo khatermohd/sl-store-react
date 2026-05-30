@@ -194,6 +194,18 @@ export default function CartSidebar({
 
   const grandTotal = itemsTotal + calculatedShipping;
 
+  // Clean phone number for WhatsApp redirects
+  const getCleanPhoneForWa = (phone: string) => {
+    let clean = phone.replace(/\s+/g, '').replace(/[+\-()]/g, '');
+    if (clean.startsWith('00')) {
+      clean = clean.substring(2);
+    }
+    if (clean.length === 8) {
+      clean = '973' + clean;
+    }
+    return clean;
+  };
+
   // Trigger simulated Inline SMS requesting
   const handleRequestInlineOtp = () => {
     setOtpError('');
@@ -215,9 +227,7 @@ export default function CartSidebar({
       setGeneratedOtp(code);
       setOtpSent(true);
       setVerifyingPhone(false);
-      setShowSimulatedSms(true);
-      
-      setTimeout(() => setShowSimulatedSms(false), 8500);
+      setShowSimulatedSms(false);
     }, 800);
   };
 
@@ -463,19 +473,6 @@ export default function CartSidebar({
         onClick={onClose}
       ></div>
 
-      {/* Simulated SMS Toast alert inside sidebar context */}
-      {showSimulatedSms && (
-        <div className="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:max-w-xs bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl z-[150] border border-slate-700 space-y-1 text-right dir-rtl animate-slide-in-up font-sans" dir="rtl">
-          <div className="flex justify-between items-center text-[9px] text-zinc-400 font-bold">
-            <span>💬 {isAr ? 'رمز أمان السلة' : 'Basket Security OTP'}</span>
-            <button onClick={() => setShowSimulatedSms(false)} className="text-zinc-500 font-bold">✕</button>
-          </div>
-          <p className="text-[11px] font-black leading-tight text-white">
-            {isAr ? `رمز هاتفك المؤقت هو: [${generatedOtp}]` : `Your SMS challenge token is: [${generatedOtp}]`}
-          </p>
-        </div>
-      )}
-
       {/* Cart Content - PURE LIGHT THEME SLATE */}
       <div 
         className="relative w-full max-w-md bg-white h-full flex flex-col justify-between shadow-2xl border-l border-slate-200 animate-in slide-in-from-left md:slide-in-from-right duration-250 text-slate-800"
@@ -633,7 +630,7 @@ export default function CartSidebar({
                     <div className="bg-slate-50 p-2.5 rounded-xl text-[10px] flex justify-between items-center text-slate-600 border border-slate-200 text-right">
                       <div className="text-left font-mono">
                         {isAr ? 'المجموع النهائي:' : 'Total due:'} 
-                        <span className="font-black text-indigo-650 text-xs pr-1 font-mono">{parseFloat(ord.grandTotal.toFixed(3))} د.ب</span>
+                        <span className="font-black text-indigo-600 text-xs pr-1 font-mono">{parseFloat(ord.grandTotal.toFixed(3))} د.ب</span>
                       </div>
                       <div>
                         {isAr ? 'الاستلام:' : 'Method:'} 
@@ -694,7 +691,7 @@ export default function CartSidebar({
                             <span className="absolute -right-[17px] top-1 w-3 h-3 rounded-full bg-slate-300 flex items-center justify-center text-[8px] text-slate-400">⚪</span>
                           )}
                           <div className="text-right pr-2">
-                            <h6 className={`text-[10.5px] font-black ${['dispatched', 'delivered'].includes(ord.status) ? 'text-emerald-600' : ord.status === 'preparing' ? 'text-indigo-650' : 'text-slate-400'}`}>
+                            <h6 className={`text-[10.5px] font-black ${['dispatched', 'delivered'].includes(ord.status) ? 'text-emerald-600' : ord.status === 'preparing' ? 'text-indigo-600' : 'text-slate-400'}`}>
                               {isAr ? 'فرز الأصناف وتجهيز الشحنة' : 'Sorting & Protective Packaging'}
                             </h6>
                             <p className="text-[9px] text-slate-555 leading-normal">
@@ -789,7 +786,7 @@ export default function CartSidebar({
                     </span>
                   </div>
                   <div className="text-left">
-                    <span className="text-[9px] text-indigo-650 block uppercase font-bold">{isAr ? 'رقم الطلب' : 'ORDER ID'}</span>
+                    <span className="text-[9px] text-indigo-600 block uppercase font-bold">{isAr ? 'رقم الطلب' : 'ORDER ID'}</span>
                     <span className="text-sm font-black text-slate-900 font-mono tracking-wider">
                       {completedOrder ? completedOrder.id : generatedOrderNo}
                     </span>
@@ -878,6 +875,26 @@ export default function CartSidebar({
             </div>
 
             <div className="space-y-2">
+              <a
+                href={completedOrder ? `https://wa.me/97337120456?text=${encodeURIComponent(
+                  `*تأكيد طلب جديد في متجر إس آند إل (البحرين)*\n` +
+                  `رقم الفاتورة الموحدة: *${completedOrder.id}*\n` +
+                  `اسم الزبون الفاضل: *${completedOrder.customerName}*\n` +
+                  `رقم الهاتف للتواصل: *${completedOrder.customerPhone}*\n` +
+                  `نوع التوصيل المطلوب: *${completedOrder.deliveryMethod === 'delivery' ? 'توصيل للمنزل' : 'استلام من المحل'}*\n` +
+                  (completedOrder.customerAddress ? `العنوان الشخصي المعتمد: *${completedOrder.customerAddress}*\n` : '') +
+                  `إجمالي المبلغ كلياً: *${completedOrder.grandTotal} د.ب*\n\n` +
+                  `*السلع المطلوبة:*\n` +
+                  completedOrder.items.map((it: any) => `- ${it.titleAr} (${it.quantity} حبات)`).join('\n')
+                )}` : clientWpLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-[#25d366] hover:bg-[#128c7e] text-white font-black py-3 px-3 rounded-xl text-xs transition active:scale-95 cursor-pointer shadow-md text-center flex items-center justify-center gap-2 animate-pulse"
+              >
+                <span>💬</span>
+                <span>{isAr ? 'أرسل الفاتورة وأكد طلبك فوراً بالواتساب' : 'Send Invoice & Confirm on WhatsApp'}</span>
+              </a>
+
               <button
                 onClick={() => {
                   setSidebarTab('history');
@@ -1055,7 +1072,7 @@ export default function CartSidebar({
                     </>
                   ) : (
                     <>
-                      <div className="text-left font-mono font-black text-indigo-650">
+                      <div className="text-left font-mono font-black text-indigo-600">
                         {parseFloat(calculatedShipping.toFixed(3))} BHD 
                         <span className="text-[8.5px] block font-sans font-bold text-slate-400 text-left leading-tight">
                           {isAr ? '*(توصيل تجميعي مفعّل)' : '*(consolidated)'}
@@ -1122,7 +1139,7 @@ export default function CartSidebar({
                       type="button"
                       onClick={handleRequestInlineOtp}
                       disabled={verifyingPhone}
-                      className="bg-indigo-650 hover:bg-slate-900 text-white text-[10px] font-black px-3 rounded-xl transition shrink-0 cursor-pointer flex items-center justify-center gap-1"
+                      className="bg-indigo-600 hover:bg-slate-900 text-white text-[10px] font-black px-3 rounded-xl transition shrink-0 cursor-pointer flex items-center justify-center gap-1"
                     >
                       <span>{verifyingPhone ? '...' : (isAr ? 'أرسل الرمز' : 'Verify')}</span>
                     </button>
@@ -1131,15 +1148,31 @@ export default function CartSidebar({
 
                 {/* OTP Validation step if code is sent */}
                 {otpSent && !sessionVerified && (
-                  <div className="mt-3 bg-indigo-50/50 p-3.5 rounded-2xl border border-indigo-150 text-right space-y-2 animate-in fade-in-50">
-                    <p className="text-[10.5px] font-black text-indigo-900">
+                  <div className="mt-3 bg-emerald-50/75 p-3.5 rounded-2xl border border-emerald-100 text-right space-y-2.5 animate-in fade-in-50">
+                    <p className="text-[11px] font-black text-emerald-900">
                       {isAr ? '🔑 رمز الدخول والتحقق المؤقت من هويتك:' : '🔑 Temporary SMS token challenge:'}
                     </p>
-                    <p className="text-[9.5px] text-slate-600">
-                      {isAr ? 'من فضلك أكتب رمز الأمان المكون من 4 أرقام لتتمكن من إرسال طلبك.' : 'Enter the 4 digit OTP digits below to authorize transaction.'}
+                    <p className="text-[9.5px] text-slate-700 leading-relaxed">
+                      {isAr 
+                        ? 'أهلاً بك! لتأكيد طلبك وتوثيق رقم هاتفك، يرجى النقر على الزر الأخضر أدناه لفتح شات الواتساب الخاص بك (محادثة مع نفسك) لإرسال الرمز وقراءته، ثم انسخه وأدخله بالأسفل لتنشيط السلة الفوري:' 
+                        : 'Welcome! To confirm your order and authorize your phone, click the green button below to open a chat with your own WhatsApp number, send/read the code, then copy & paste it below:'}
                     </p>
+
+                    {/* WhatsApp outbound button */}
+                    <a
+                      href={`https://wa.me/${getCleanPhoneForWa(customerPhone)}?text=${encodeURIComponent(
+                        isAr 
+                          ? `رمز التحقق الخاص بك في موقع S&L (${generatedOtp})`
+                          : `Your verification code on S&L is (${generatedOtp})`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-[10px] text-center transition transform active:scale-95 flex items-center justify-center gap-1 shadow-xs cursor-pointer"
+                    >
+                      <span>💬 {isAr ? 'إرسال الرمز وتلقيه في الواتساب الخاص بك' : 'Send Code & Receive on Your WhatsApp'}</span>
+                    </a>
                     
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 pt-1">
                       <input
                         type="text"
                         maxLength={4}
@@ -1151,9 +1184,9 @@ export default function CartSidebar({
                       <button
                         type="button"
                         onClick={handleVerifyInlineOtp}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black px-4 rounded-lg transition active:scale-95"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black px-4 rounded-lg transition active:scale-95 cursor-pointer"
                       >
-                        {isAr ? 'تأكيد الرمز' : 'Check Code'}
+                        {isAr ? 'تأكيد الرمز' : 'Verify Code'}
                       </button>
                     </div>
 

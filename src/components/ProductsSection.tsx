@@ -205,7 +205,7 @@ export default function ProductsSection({
                     </div>
                     <h3 
                       onClick={() => setSelectedProduct(p)}
-                      className="font-black text-slate-800 text-[11px] sm:text-xs leading-tight cursor-pointer hover:text-indigo-650 transition line-clamp-2 h-[28px] sm:h-[32px] overflow-hidden"
+                      className="font-black text-slate-800 text-[11px] sm:text-xs leading-tight cursor-pointer hover:text-indigo-600 transition line-clamp-2 h-[28px] sm:h-[32px] overflow-hidden"
                       title={title}
                     >
                       {title}
@@ -339,7 +339,7 @@ export default function ProductsSection({
                             >
                               <img src={link.image} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0 border border-slate-150" />
                               <div className="min-w-0">
-                                <h4 className="text-[9.5px] font-extrabold text-slate-800 hover:text-indigo-650 transition truncate leading-tight">{isAr ? link.title : (link.titleEn || link.title)}</h4>
+                                <h4 className="text-[9.5px] font-extrabold text-slate-800 hover:text-indigo-600 transition truncate leading-tight">{isAr ? link.title : (link.titleEn || link.title)}</h4>
                                 <p className="text-[9.5px] text-emerald-600 font-mono font-bold leading-none mt-0.5">{parseFloat(link.price.toFixed(3))} BHD</p>
                               </div>
                             </div>

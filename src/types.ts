@@ -86,6 +86,7 @@ export interface StoreSettings {
   useCustomTelegramBot?: boolean;
   enableTelegramSync?: boolean;
   enableSheetsSync?: boolean;
+  callmebotApiKey?: string;
 }
 
 export interface OrderItem {

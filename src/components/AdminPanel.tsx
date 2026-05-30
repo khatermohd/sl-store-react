@@ -59,6 +59,7 @@ export default function AdminPanel({
   const [adr, setAdr] = useState(storeSettings.socials.locationAddress);
   const [pickupAr, setPickupAr] = useState(storeSettings.socials.pickupInstructionsAr);
   const [pickupEn, setPickupEn] = useState(storeSettings.socials.pickupInstructionsEn);
+  const [callMeBotKey, setCallMeBotKey] = useState(storeSettings.callmebotApiKey || '');
   
   // Ad top settings
   const [adActive, setAdActive] = useState(storeSettings.topAd.isActive);
@@ -120,6 +121,8 @@ export default function AdminPanel({
 
   // Form and Sheet Sync Status States
   const [telegramTestLoading, setTelegramTestLoading] = useState(false);
+  const [whatsappTestLoading, setWhatsappTestLoading] = useState(false);
+  const [copiedText, setCopiedText] = useState(false);
   const [telegramUsernameInput, setTelegramUsernameInput] = useState(storeSettings.telegramUsername || '@ShopSLbh');
   const [telegramBotTokenInput, setTelegramBotTokenInput] = useState(storeSettings.telegramBotToken || '');
   const [telegramChatIdInput, setTelegramChatIdInput] = useState(storeSettings.telegramChatId || '');
@@ -132,6 +135,16 @@ export default function AdminPanel({
   const [fetchingDriveFiles, setFetchingDriveFiles] = useState(false);
   const [uploadingBackup, setUploadingBackup] = useState(false);
   const [firestoreSyncing, setFirestoreSyncing] = useState(false);
+
+  // New App alert & Sound polling states
+  const [recentNewOrder, setRecentNewOrder] = useState<any | null>(null);
+  const [muteAudioAlert, setMuteAudioAlert] = useState<boolean>(() => {
+    return localStorage.getItem('sl_mute_audio_alerts') === 'true';
+  });
+  const [enablePolling, setEnablePolling] = useState<boolean>(true);
+  const [notificationPermission, setNotificationPermission] = useState<string>(
+    typeof window !== 'undefined' ? (Notification as any)?.permission || 'default' : 'default'
+  );
 
   useEffect(() => {
     const unsubscribe = initAuth(
@@ -229,6 +242,49 @@ export default function AdminPanel({
     });
   };
 
+  // Play synthesized bell ringtone via Web Audio API (cross-device & offline-resilient)
+  const playAlertNotificationSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      const playNote = (freq: number, start: number, duration: number) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + start);
+        gain.gain.setValueAtTime(0, audioCtx.currentTime + start);
+        gain.gain.linearRampToValueAtTime(0.35, audioCtx.currentTime + start + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + start + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + start);
+        osc.stop(audioCtx.currentTime + start + duration);
+      };
+
+      // Sound notification sequence (delightful bell/chime)
+      playNote(880, 0, 0.45);        // A5 (Ding)
+      playNote(880, 0.18, 0.45);     // A5 (Ding)
+      playNote(1109.73, 0.38, 0.75); // C#6 (High joyful chime)
+    } catch (err) {
+      console.warn("Failed to play synthesized sound alert", err);
+    }
+  };
+
+  // Helper to trigger system notification permissions
+  const requestNotificationPermission = () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      Notification.requestPermission()
+        .then(permission => {
+          setNotificationPermission(permission);
+          if (permission === 'granted') {
+            alert(isAr ? '✓ تم تفعيل الإشعارات بنجاح!' : '✓ System notifications activated successfully!');
+          }
+        });
+    } else {
+      alert(isAr ? 'الإشعارات غير مدعومة في متصفحك الحالي.' : 'System notifications are not supported in your browser.');
+    }
+  };
+
   // Reload orders on activeTab / open state changes from Express Server Database
   useEffect(() => {
     if (isOpen && activeTab === 'orders') {
@@ -252,6 +308,91 @@ export default function AdminPanel({
         });
     }
   }, [isOpen, activeTab]);
+
+  // Real-time Background Order Polling and Notification App System
+  useEffect(() => {
+    if (!enablePolling) return;
+
+    let isFirstRun = true;
+    let existingIds = new Set<string>();
+
+    const checkNewOrders = () => {
+      fetch('/api/orders')
+        .then(res => {
+          if (res.ok) return res.json();
+          throw new Error("Failed polling checking");
+        })
+        .then(data => {
+          if (!Array.isArray(data)) return;
+
+          if (isFirstRun) {
+            data.forEach((ord: any) => {
+              if (ord && ord.id) existingIds.add(ord.id);
+            });
+            isFirstRun = false;
+            return;
+          }
+
+          const newlyArrrived: any[] = [];
+          data.forEach((ord: any) => {
+            if (ord && ord.id && !existingIds.has(ord.id)) {
+              existingIds.add(ord.id);
+              newlyArrrived.push(ord);
+            }
+          });
+
+          if (newlyArrrived.length > 0) {
+            // Sort to find the newest one
+            const sortedNew = newlyArrrived.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            const newestOne = sortedNew[0];
+
+            setRecentNewOrder(newestOne);
+
+            if (!muteAudioAlert) {
+              playAlertNotificationSound();
+            }
+
+            // System standard Notification trigger
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              try {
+                new Notification(isAr ? "🛎️ مبروك! يوجد طلب جديد في المتجر" : "🛎️ Congratulations! New Order in Store", {
+                  body: isAr 
+                    ? `رقم الطلب: ${newestOne.id}\nالزبون: ${newestOne.customerName}\nالمبلغ: ${newestOne.grandTotal} د.ب` 
+                    : `Order ID: ${newestOne.id}\nCustomer: ${newestOne.customerName}\nAmount: ${newestOne.grandTotal} BHD`,
+                  tag: 'sl-new-order',
+                  icon: storeLogo || 'https://img.icons8.com/color/192/shopping-bag--v1.png'
+                });
+              } catch (e) {
+                console.warn("Native notification warning: ", e);
+              }
+            }
+
+            // Merge into local state
+            setOrders(prev => {
+              const merged = [...newlyArrrived, ...prev];
+              const unique = merged.filter((item, pos, self) => self.findIndex(v => v.id === item.id) === pos);
+              return unique.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            });
+          }
+        })
+        .catch(err => {
+          console.warn("Background order live check failed", err);
+        });
+    };
+
+    // Delay first polling fetch slightly
+    const timer = setTimeout(() => {
+      checkNewOrders();
+    }, 2000);
+
+    // Dynamic Interval check every 5 seconds
+    const interval = setInterval(checkNewOrders, 5000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, [enablePolling, muteAudioAlert, isAr, storeLogo]);
 
   const handleUpdateOrderStatus = (orderId: string, newStatus: string) => {
     // Send state update to Express backend
@@ -340,6 +481,7 @@ export default function AdminPanel({
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
     onSaveStoreSettings({
+      ...storeSettings,
       storeName: storeName.trim() || 'S&L',
       storeLogoUrl: storeLogo.trim() || undefined,
       accentColor: storeSettings.accentColor,
@@ -367,7 +509,8 @@ export default function AdminPanel({
         adsenseClient: adClient.trim(),
         adsenseSlot: adSlot.trim(),
         showOverlayText: adShowOverlayText
-      }
+      },
+      callmebotApiKey: callMeBotKey.trim() || undefined
     });
 
     // Also persist base credentials
@@ -678,14 +821,7 @@ export default function AdminPanel({
             >
               👥 {isAr ? 'إضافة وتعديل المشرفين' : 'Add Moderators'}
             </button>
-            <button
-              onClick={() => setActiveTab('cloud')}
-              className={`px-4.5 py-2 rounded-xl text-xs font-black whitespace-nowrap transition cursor-pointer ${
-                activeTab === 'cloud' ? 'bg-[#9333ea] text-white animate-pulse' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              ☁️ {isAr ? 'الربط السحابي والأتمتة' : 'Cloud Sync & Google'}
-            </button>
+
           </div>
 
           {/* Tab 1: Store settings form */}
@@ -806,6 +942,96 @@ export default function AdminPanel({
                       onChange={(e) => setAdr(e.target.value)}
                       className="w-full text-xs p-2.5 bg-[#160e3d] text-white border border-[#8b5cf6]/20 rounded-xl outline-none"
                     />
+                  </div>
+                </div>
+
+                {/* 🚨 Live Order Notification Alarm Settings (Replaces WhatsApp silent settings) */}
+                <div className="mt-4 p-4 bg-[#1a1240]/40 rounded-2xl border border-[#8b5cf6]/30 space-y-4">
+                  <h5 className="text-xs font-black text-[#5df6be] flex items-center gap-2">
+                    📢
+                    <span>{isAr ? 'نظام تنبيهات وجرس إنذار الطلبات للتطبيق المباشر:' : 'Live Order Notification & Alarm App Settings:'}</span>
+                  </h5>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed">
+                    {isAr 
+                      ? 'بسبب عدم توافق واتساب للبث غير المباشر، يدعم النظام الآن جرس تنبيه وبثاً حياً للطلبات الجديدة في الخلفية بمتصفحك مثل التطبيق الحقيقي تماماً وبصوت رنين حقيقي.' 
+                      : 'To guarantee immediate order receipts, this applet runs background-polling to ring audio chimings and trigger system push alerts instantly.'}
+                  </p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Permission trigger */}
+                    <div className="bg-[#12092e] p-3 rounded-xl border border-zinc-850 flex flex-col justify-between space-y-2">
+                      <div>
+                        <span className="text-[11px] font-bold text-white block">
+                          🛡️ {isAr ? 'إشعارات النظام التلقائية:' : 'System Push Notifications:'}
+                        </span>
+                        <span className="text-[9.5px] text-zinc-400 block mt-0.5">
+                          {isAr ? `حالة الإذن الحالية: ${notificationPermission === 'granted' ? 'مفعّله مسبقاً ✓' : 'غير نشطة ⚠️'}` : `Permission Status: ${notificationPermission.toUpperCase()}`}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={requestNotificationPermission}
+                        className="w-full bg-[#8b5cf6]/20 hover:bg-[#8b5cf6]/40 text-white font-bold py-1.5 px-3 rounded-lg text-[9.5px] cursor-pointer transition text-center"
+                      >
+                        {isAr ? '🔑 تفعيل إشعارات الهاتف / النظام' : '🔑 Enable Device Push Notifications'}
+                      </button>
+                    </div>
+
+                    {/* Alarm Sound Controller */}
+                    <div className="bg-[#12092e] p-3 rounded-xl border border-zinc-850 flex flex-col justify-between space-y-2">
+                      <div>
+                        <span className="text-[11px] font-bold text-white block">
+                          🔊 {isAr ? 'التحكم بكتم الصوت:' : 'Audio Muting State:'}
+                        </span>
+                        <span className="text-[9.5px] text-zinc-400 block mt-0.5">
+                          {isAr ? `الرنين الصوتي: ${muteAudioAlert ? 'صامت 🔇' : 'مفعّل وصاخب 🔔'}` : `Sound Alerts: ${muteAudioAlert ? 'Muted 🔇' : 'Active 🔔'}`}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const val = !muteAudioAlert;
+                            setMuteAudioAlert(val);
+                            localStorage.setItem('sl_mute_audio_alerts', String(val));
+                          }}
+                          className={`flex-1 font-bold py-1.5 px-3 rounded-lg text-[9.5px] cursor-pointer transition text-center ${
+                            muteAudioAlert ? 'bg-[#ff007f] text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                          }`}
+                        >
+                          {muteAudioAlert ? (isAr ? '🔊 تشغيل الصوت' : '🔊 Unmute') : (isAr ? '🔇 كتم الصوت' : '🔇 Mute')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={playAlertNotificationSound}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[9.5px] font-bold cursor-pointer text-center"
+                          title="Test buzzer"
+                        >
+                          🔔 {isAr ? 'اختبر الجرس' : 'Test Ring'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Polling Toggle switch */}
+                  <div className="bg-[#12092e] p-3 rounded-xl border border-zinc-850 flex justify-between items-center">
+                    <div>
+                      <span className="text-[11px] font-bold text-white block">
+                        ⚙️ {isAr ? 'مراقبة الطلبات التلقائية بالخلفية:' : 'Background Live Order Tracker:'}
+                      </span>
+                      <span className="text-[9px] text-zinc-400 block mt-0.5">
+                        {isAr ? 'يفحص المتجر السحابي كل ٥ ثوانٍ لجلب صفقات جديدة والبدء بالرنين.' : 'Scans store data every 5 seconds to query incoming cashorders.'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEnablePolling(!enablePolling)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black text-white cursor-pointer transition ${
+                        enablePolling ? 'bg-[#10b981] animate-pulse' : 'bg-zinc-850'
+                      }`}
+                    >
+                      {enablePolling ? (isAr ? 'نشط ومستمر ✓' : 'Running ✓') : (isAr ? 'إيقاف مؤقت 🛑' : 'Paused 🛑')}
+                    </button>
                   </div>
                 </div>
 
@@ -1689,7 +1915,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {activeTab === 'cloud' && (
+          {false && activeTab === 'cloud' && (
             <div className="space-y-6 font-sans">
               <div className="border-b border-[#cbd5e1]/10 pb-4">
                 <h4 className="text-sm font-black text-[#5df6be] flex items-center gap-2">
