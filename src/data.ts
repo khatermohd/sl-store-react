@@ -257,5 +257,12 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
     adsenseClient: 'ca-pub-1208489237840199',
     adsenseSlot: '8033541109'
   },
-  deliveryFee: 3
+  deliveryFee: 3,
+  googleSpreadsheetId: "",
+  googleSpreadsheetUrl: "",
+  googleFormId: "",
+  googleFormUrl: "",
+  telegramUsername: "@ShopSLbh",
+  enableTelegramSync: true,
+  enableSheetsSync: true
 };

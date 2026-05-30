@@ -158,6 +158,46 @@ async function startServer() {
     res.json({ status: "ok", supabase_active: !!supabase });
   });
 
+  // API: Dynamic Telegram notification forwarder
+  app.post("/api/google/notify", async (req, res) => {
+    const { message, username } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: "Message content is required" });
+    }
+    const targetUser = username || "@ShopSLbh";
+    const cleanUsername = targetUser.startsWith("@") ? targetUser : `@${targetUser}`;
+    
+    try {
+      const urls = [
+        `https://api.callmebot.com/telegram/sendMessage.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`,
+        `https://api.callmebot.com/telegram/group.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`,
+        `https://callmebot.com/telegram/sendMessage.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`
+      ];
+
+      let success = false;
+      for (const url of urls) {
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            success = true;
+            console.log(`Dynamic Notification sent to Callmebot: ${cleanUsername}`);
+            break;
+          }
+        } catch (e: any) {
+          console.error(`Dynamic Notification error for URL ${url}:`, e.message);
+        }
+      }
+      
+      if (success) {
+        return res.json({ success: true, message: `Notification successfully pushed to Telegram channel/user: ${cleanUsername}` });
+      } else {
+        return res.status(502).json({ error: "Could not deliver alert to CallMeBot Telegram API" });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || "Failed to notify via Telegram" });
+    }
+  });
+
   // API: Secure Administrator Login via Server-side Environment Variables (Dynamic Runtime)
   app.post("/api/admin/login", (req, res) => {
     const { email, password } = req.body;

@@ -1,0 +1,28 @@
+{
+  "entities": {
+    "order": {
+      "title": "Order",
+      "description": "Store purchase order submitted by customer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique Order ID" },
+        "customerName": { "type": "string", "description": "Customer Full Name" },
+        "customerPhone": { "type": "string", "description": "Customer Phone Number" },
+        "customerAddress": { "type": "string", "description": "Customer Shipping Address" },
+        "deliveryMethod": { "type": "string", "description": "Method of delivery (delivery or pickup)", "enum": ["delivery", "pickup"] },
+        "itemsTotal": { "type": "number", "description": "Total cost of ordered items" },
+        "shippingFee": { "type": "number", "description": "Shipping and delivery charges" },
+        "grandTotal": { "type": "number", "description": "Sum of items total and shipping fee" },
+        "status": { "type": "string", "description": "Current processing status", "enum": ["pending", "processed", "completed", "cancelled"] },
+        "createdAt": { "type": "string", "description": "Creation timestamp in local or ISO format" }
+      },
+      "required": ["id", "customerName", "customerPhone", "deliveryMethod", "itemsTotal", "shippingFee", "grandTotal", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/orders/{orderId}": {
+      "schema": "order",
+      "description": "Collection of all purchase orders"
+    }
+  }
+}

@@ -75,6 +75,13 @@ export interface StoreSettings {
   socials: SocialLinks;
   topAd: AdBanner;
   deliveryFee: number;
+  googleSpreadsheetId?: string;
+  googleSpreadsheetUrl?: string;
+  googleFormId?: string;
+  googleFormUrl?: string;
+  telegramUsername?: string;
+  enableTelegramSync?: boolean;
+  enableSheetsSync?: boolean;
 }
 
 export interface OrderItem {

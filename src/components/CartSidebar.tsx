@@ -1,6 +1,7 @@
 import { Product, StoreSettings, Order, OrderItem } from '../types';
 import { ShoppingBag, X, Trash2, Plus, Minus, Send, CheckCircle, Sparkles, ClipboardList } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { syncOrderToFirestore } from '../lib/firebaseStore';
 
 interface CartItem {
   product: Product;
@@ -338,6 +339,11 @@ export default function CartSidebar({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newOrder)
     }).catch(err => console.error("Server API offline; using local cache", err));
+
+    // Sync with Firebase Firestore s cloud database
+    syncOrderToFirestore(newOrder).catch(err => {
+      console.error("Failed to sync new order to Cloud Firestore", err);
+    });
 
     // Sanitize client phone number for record keeping
     let rawClientPhone = customerPhone.replace(/\D/g, '');

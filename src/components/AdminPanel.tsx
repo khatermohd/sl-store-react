@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { User, Product, PartnerCoupon, StoreSettings, AdminAccount } from '../types';
-import { Wrench, Plus, Trash2, Edit2, ShieldAlert, Sparkles, Save, Mail, Key, Phone, Globe, Image, Film, UserPlus, Users } from 'lucide-react';
+import { Wrench, Plus, Trash2, Edit2, ShieldAlert, Sparkles, Save, Mail, Key, Phone, Globe, Image, Film, UserPlus, Users, Cloud, Database, Clipboard, AlertCircle, RefreshCw, Send, CheckCircle, HardDrive, CheckSquare, FileText } from 'lucide-react';
+import { initAuth, googleSignIn, googleSignOut, createGoogleSheet, createGoogleForm, listGoogleDriveFiles, uploadBackupToGoogleDrive, sendGmailInvoice, createGoogleTaskForOrder, DriveFile } from '../lib/googleAuth';
+import { syncOrderToFirestore, updateOrderStatusInFirestore, deleteOrderFromFirestore, listOrdersFromFirestore } from '../lib/firebaseStore';
+import { User as FirebaseUser } from 'firebase/auth';
 
 interface AdminPanelProps {
   user: User | null;
@@ -25,7 +28,7 @@ export default function AdminPanel({
 }: AdminPanelProps) {
   const isAr = lang === 'ar';
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'settings' | 'products' | 'coupons' | 'moderators' | 'orders'>('orders');
+  const [activeTab, setActiveTab] = useState<'settings' | 'products' | 'coupons' | 'moderators' | 'orders' | 'cloud'>('orders');
 
   // Multi-moderator states
   const [adminAccounts, setAdminAccounts] = useState<AdminAccount[]>(() => {
@@ -108,6 +111,53 @@ export default function AdminPanel({
   const [coupCode, setCoupCode] = useState('');
   const [coupCategory, setCoupCategory] = useState('food');
   const [coupDiscount, setCoupDiscount] = useState('');
+
+  // Google OAuth Auth State
+  const [googleUser, setGoogleUser] = useState<FirebaseUser | null>(null);
+  const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Form and Sheet Sync Status States
+  const [telegramTestLoading, setTelegramTestLoading] = useState(false);
+  const [telegramUsernameInput, setTelegramUsernameInput] = useState(storeSettings.telegramUsername || '@ShopSLbh');
+  const [enableTelegramSyncState, setEnableTelegramSyncState] = useState(storeSettings.enableTelegramSync !== false);
+  const [enableSheetsSyncState, setEnableSheetsSyncState] = useState(storeSettings.enableSheetsSync !== false);
+
+  // Google Drive & Gmail & Tasks & Firestore Sync States
+  const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
+  const [fetchingDriveFiles, setFetchingDriveFiles] = useState(false);
+  const [uploadingBackup, setUploadingBackup] = useState(false);
+  const [firestoreSyncing, setFirestoreSyncing] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = initAuth(
+      (user, token) => {
+        setGoogleUser(user);
+        setGoogleToken(token);
+      },
+      () => {
+        setGoogleUser(null);
+        setGoogleToken(null);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'cloud' && googleToken) {
+      setFetchingDriveFiles(true);
+      listGoogleDriveFiles(googleToken)
+        .then(files => {
+          setDriveFiles(files);
+        })
+        .catch(err => {
+          console.error("Failed to load Google Drive files:", err);
+        })
+        .finally(() => {
+          setFetchingDriveFiles(false);
+        });
+    }
+  }, [activeTab, googleToken]);
 
   // Orders Administration State
   const [orders, setOrders] = useState<any[]>(() => {
@@ -214,6 +264,11 @@ export default function AdminPanel({
       console.error("Failed to sync status with server database", err);
     });
 
+    // Sync with Firebase Firestore
+    updateOrderStatusInFirestore(orderId, newStatus).catch(err => {
+      console.error("Failed to sync status update to Cloud Firestore", err);
+    });
+
     const updated = orders.map(ord => {
       if (ord.id === orderId) {
         return { ...ord, status: newStatus };
@@ -244,6 +299,11 @@ export default function AdminPanel({
     fetch(`/api/orders/${orderId}`, {
       method: 'DELETE'
     }).catch(err => console.error("Could not sync deletion with server db", err));
+
+    // Sync with Firebase Firestore
+    deleteOrderFromFirestore(orderId).catch(err => {
+      console.error("Failed to delete order from Cloud Firestore", err);
+    });
 
     const updated = orders.filter(ord => ord.id !== orderId);
     setOrders(updated);
@@ -612,6 +672,14 @@ export default function AdminPanel({
               }`}
             >
               👥 {isAr ? 'إضافة وتعديل المشرفين' : 'Add Moderators'}
+            </button>
+            <button
+              onClick={() => setActiveTab('cloud')}
+              className={`px-4.5 py-2 rounded-xl text-xs font-black whitespace-nowrap transition cursor-pointer ${
+                activeTab === 'cloud' ? 'bg-[#9333ea] text-white animate-pulse' : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              ☁️ {isAr ? 'الربط السحابي والأتمتة' : 'Cloud Sync & Google'}
             </button>
           </div>
 
@@ -1591,6 +1659,536 @@ export default function AdminPanel({
             </div>
           )}
 
+          {activeTab === 'cloud' && (
+            <div className="space-y-6 font-sans">
+              <div className="border-b border-[#cbd5e1]/10 pb-4">
+                <h4 className="text-sm font-black text-[#5df6be] flex items-center gap-2">
+                  <Cloud className="text-cyan-400 animate-pulse" size={18} />
+                  <span>{isAr ? 'منصة الربط السحابي ومزامنة البيانات (Google & Telegram)' : 'Cloud API Connections & Sync Control Panel'}</span>
+                </h4>
+                <p className="text-[10px] text-zinc-400 mt-1">
+                  {isAr 
+                    ? 'أتمتة متجر إس آند إل: يمكنك ربط طلبات العملاء الفورية بجداول جوجل تلقائياً، وإنشاء نماذج استبيان جوجل فوركس لعملائك، وتلقي تنبيهات تليجرام الفورية.' 
+                    : 'Configure Google Workspace APIs & Telegram alerts to handle backends, responses, and notification channels in the background.'}
+                </p>
+              </div>
+
+              {/* 1. GOOGLE CONNECTION CARD */}
+              <div className="p-4 rounded-2xl border border-[#cbd5e1]/10 bg-[#1b124a]/40 space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-full bg-gradient-to-br from-amber-400 to-red-500 text-white shadow-md">
+                      <Cloud size={20} />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-white">{isAr ? 'حساب جوجل المعتمد (Google Authorization)' : 'Google Connection Authentication'}</h5>
+                      <p className="text-[10.5px] text-zinc-400 mt-0.5">
+                        {googleUser 
+                          ? (isAr ? `متصل مع: ${googleUser.email}` : `Connected as: ${googleUser.email}`)
+                          : (isAr ? 'الربط مطلوب لإنشاء وتعديل وتحديث جداول ونماذج جوجل سحابياً.' : 'Authorize your Google Account to activate Google spreadsheets & forms syncing.')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {googleUser ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (window.confirm(isAr ? 'هل أنت متأكد من تسجيل الخروج وفصل ربط جوجل؟' : 'Are you sure you want to disconnect Google Workspace?')) {
+                          try {
+                            await googleSignOut();
+                            alert(isAr ? '✓ تم تسجيل الخروج وفصل جوجل بنجاح' : '✓ Disconnected from Google successfully');
+                          } catch (e: any) {
+                            alert(e.message);
+                          }
+                        }
+                      }}
+                      className="px-4 py-2 border border-rose-500/30 hover:bg-rose-500/10 text-rose-450 hover:text-white rounded-xl text-xs font-black transition cursor-pointer shrink-0"
+                    >
+                      {isAr ? '🚪 قطع الاتصال وتطهير الجلسة' : '🚪 Disconnect Account'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={googleLoading}
+                      onClick={async () => {
+                        setGoogleLoading(true);
+                        try {
+                          const result = await googleSignIn();
+                          if (result) {
+                            alert(isAr ? `👋 مرحباً بك يا ${result.user.displayName || 'خاطر'}! تم الاتصال بجوجل بنجاح.` : `👋 Hello ${result.user.displayName || 'Admin'}! connected successfully.`);
+                          }
+                        } catch (err: any) {
+                          alert(isAr ? `❌ فشل الاتصال بجوجل: ${err.message}` : `❌ Authorization issue: ${err.message}`);
+                        } finally {
+                          setGoogleLoading(false);
+                        }
+                      }}
+                      className="gsi-material-button relative flex-none"
+                    >
+                      <div className="gsi-material-button-state"></div>
+                      <div className="gsi-material-button-content-wrapper bg-white hover:bg-zinc-55 border border-zinc-200 text-zinc-800 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-2 shadow-sm transition">
+                        <div className="gsi-material-button-icon shrink-0">
+                          <svg version="1.1" xmlns="http://www.w3.org/2500/svg" viewBox="0 0 48 48" style={{ display: 'block', width: '16px', height: '16px' }}>
+                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                            <path fill="none" d="M0 0h48v48H0z"></path>
+                          </svg>
+                        </div>
+                        <span className="gsi-material-button-contents">{isAr ? '🔑 تسجيل الدخول بحساب جوجل' : '🔑 Sign In with Google Workspace'}</span>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. GOOGLE SHEETS SYNC BLOCK */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* SHEETS */}
+                <div className="p-4 rounded-2xl bg-[#160e3d]/85 border border-[#8b5cf6]/20 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Database className="text-emerald-400" size={16} />
+                      <h5 className="text-xs font-black text-white">{isAr ? 'جداول بيانات جوجل (Google Sheets Sync)' : 'Spreadsheets Sync Integration'}</h5>
+                    </div>
+                    <p className="text-[10px] text-zinc-405 leading-relaxed">
+                      {isAr 
+                        ? 'إنشاء ومزامنة ملف جدول سحابي يحتوي على قائمة الطلبات والزبائن وعناوينهم وأسعار السلع وتحديثات الحالات لحظة بلحظة.'
+                        : 'Create a live, connected cloud Excel sheet to automate records ledger backup of purchases, grand totals and status.'}
+                    </p>
+                    
+                    {storeSettings.googleSpreadsheetUrl ? (
+                      <div className="bg-emerald-950/20 border border-emerald-500/20 p-2.5 rounded-xl flex items-center justify-between gap-1 mt-2">
+                        <span className="text-[9.5px] font-bold text-emerald-400 truncate flex items-center gap-1">
+                          <CheckCircle size={11} />
+                          {isAr ? 'جدول الطلبات متصل وجاهز للمزامنة ✓' : 'Orders Sheet Connected ✓'}
+                        </span>
+                        <a 
+                          href={storeSettings.googleSpreadsheetUrl}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="bg-emerald-600 hover:bg-emerald-750 text-white rounded-lg px-2.5 py-1 text-[8.5px] font-black whitespace-nowrap"
+                        >
+                          {isAr ? '🔗 فتح الجدول' : '🔗 Open Sheet'}
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 bg-zinc-900/50 rounded-xl text-[9px] text-zinc-505">
+                        ⚠️ {isAr ? 'لم يسبق ربط أو إنشاء جدول طلبات مخصص بعد.' : 'No active orders backup sheet configured.'}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      disabled={!googleToken}
+                      onClick={async () => {
+                        if (!googleToken) return;
+                        setGoogleLoading(true);
+                        try {
+                          const res = await createGoogleSheet(googleToken, storeSettings.storeName, orders);
+                          onSaveStoreSettings({
+                            ...storeSettings,
+                            googleSpreadsheetId: res.spreadsheetId,
+                            googleSpreadsheetUrl: res.spreadsheetUrl
+                          });
+
+                          // Send Telegram confirmation
+                          const tgMsg = `📊 S&L Store notification: Created & Connected Google Sheets for Store orders!\nOpen here: ${res.spreadsheetUrl}`;
+                          await fetch('/api/google/notify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message: tgMsg, username: telegramUsernameInput })
+                          });
+
+                          alert(isAr 
+                            ? '✅ تم إنشاء جدول الطلبات بنجاح وربطه بالمتجر! وتم إرسال إشعار تليجرام فوراً.' 
+                            : '✅ Created S&L orders spreadsheet & sent Telegram alert notification successfully!');
+                        } catch (err: any) {
+                          alert(err.message);
+                        } finally {
+                          setGoogleLoading(false);
+                        }
+                      }}
+                      className={`w-full py-2.5 rounded-xl text-center text-[10.5px] font-black cursor-pointer transition ${
+                        googleToken 
+                          ? 'bg-emerald-650 hover:bg-emerald-700 text-white shadow-md' 
+                          : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                      }`}
+                    >
+                      📋 {isAr ? 'إنشاء ومزامنة جدول طلبات S&L الآن' : 'Create & Sync Orders Spreadsheet'}
+                    </button>
+                    {!googleToken && (
+                      <span className="text-[8.5px] text-red-400 block text-center mt-1">{isAr ? '* يجب الاتصال بجوجل أولاً لتفعيل الخيار' : '* Google connection required to active sheets Sync'}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* FORMS */}
+                <div className="p-4 rounded-2xl bg-[#160e3d]/85 border border-[#8b5cf6]/20 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Clipboard className="text-[#a855f7]" size={16} />
+                      <h5 className="text-xs font-black text-white">{isAr ? 'نماذج استطلاع الرأي (Google Forms)' : 'Inquiries & Feedback Google Form'}</h5>
+                    </div>
+                    <p className="text-[10px] text-zinc-405 leading-relaxed">
+                      {isAr 
+                        ? 'إنشاء استبيان جودة مع كود تتبع الرضا للمتجر، يسمح بمشاركة الرابط مع العملاء لتقييم الشحن والتسعيرة في البحرين.'
+                        : 'Deploy a linked customer feedback Google Form to collect buyer score ratings about combine-shipping services.'}
+                    </p>
+
+                    {storeSettings.googleFormUrl ? (
+                      <div className="bg-[#a855f7]/10 border border-[#a855f7]/20 p-2.5 rounded-xl flex items-center justify-between gap-1 mt-2">
+                        <span className="text-[9.5px] font-bold text-[#b07dfb] truncate flex items-center gap-1">
+                          <CheckCircle size={11} />
+                          {isAr ? 'نموذج التقييم جاهز لجمع الآراء ✓' : 'Feedback Form is Active ✓'}
+                        </span>
+                        <a 
+                          href={storeSettings.googleFormUrl}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="bg-[#a855f7] hover:bg-[#c084fc] text-white rounded-lg px-2.5 py-1 text-[8.5px] font-black whitespace-nowrap"
+                        >
+                          {isAr ? '🔗 فتح النموذج' : '🔗 Open Form'}
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 bg-zinc-900/50 rounded-xl text-[9px] text-zinc-505">
+                        ⚠️ {isAr ? 'لا يوجد نموذج رأى عملاء مربوط حالياً.' : 'No active inquiries Google Form deployed.'}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      disabled={!googleToken}
+                      onClick={async () => {
+                        if (!googleToken) return;
+                        setGoogleLoading(true);
+                        try {
+                          const res = await createGoogleForm(googleToken, storeSettings.storeName);
+                          onSaveStoreSettings({
+                            ...storeSettings,
+                            googleFormId: res.formId,
+                            googleFormUrl: res.responderUri
+                          });
+
+                          // Send Telegram confirmation
+                          const tgMsg = `📝 S&L Store notification: Created Customer Feedback Google Form!\nRespond link: ${res.responderUri}`;
+                          await fetch('/api/google/notify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message: tgMsg, username: telegramUsernameInput })
+                          });
+
+                          alert(isAr 
+                            ? '✅ تم تفعيل ونشر نموذج الرأي بنجاح! وتم إرسال نسخة للتليجرام للتأكيد.' 
+                            : '✅ Google Form created successfully! A confirmation alert was dispatched to your Telegram.');
+                        } catch (err: any) {
+                          alert(err.message);
+                        } finally {
+                          setGoogleLoading(false);
+                        }
+                      }}
+                      className={`w-full py-2.5 rounded-xl text-center text-[10.5px] font-black cursor-pointer transition ${
+                        googleToken 
+                          ? 'bg-[#8b5cf6] hover:bg-[#a855f7] text-white shadow-md' 
+                          : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                      }`}
+                    >
+                      📝 {isAr ? 'إنشاء نموذج استبيان عملاء S&L' : 'Deploy Customer Feedback Form'}
+                    </button>
+                    {!googleToken && (
+                      <span className="text-[8.5px] text-red-400 block text-center mt-1">{isAr ? '* يجب الاتصال بجوجل أولاً لتفعيل الخيار' : '* Google connection required'}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. TELEGRAM CHANNELS CONFIGURATION CARD */}
+              <div className="p-4 rounded-2xl bg-[#1b124a]/20 border border-[#8b5cf6]/20 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Send className="text-sky-400" size={16} />
+                  <h5 className="text-xs font-black text-white">{isAr ? 'ربط إشعارات بوت تليجرام الفوري (Telegram Bot Automation)' : 'Telegram Notification Channel Routing'}</h5>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10.5px] font-bold text-zinc-350 block mb-1">
+                      {isAr ? 'معرف حساب أو قناة التليجرام (للجبهة والمالك خاطر):' : 'Telegram Bot recipient Username / group:'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={telegramUsernameInput}
+                      onChange={(e) => setTelegramUsernameInput(e.target.value)}
+                      placeholder="@ShopSLbh"
+                      className="w-full text-xs font-mono p-2.5 bg-[#12092e] text-white border border-[#8b5cf6]/25 rounded-xl outline-none"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col justify-end space-y-2.5">
+                    <div className="flex items-center justify-between text-xs font-semibold text-zinc-400 bg-[#12092e] px-3 py-2.5 rounded-xl border border-[#cbd5e1]/5">
+                      <span>{isAr ? 'تنبيه التليجرام عند العمليات الجديدة:' : 'Sync triggers to Telegram alerts:'}</span>
+                      <button
+                        type="button"
+                        onClick={() => setEnableTelegramSyncState(!enableTelegramSyncState)}
+                        className={`px-3 py-1 text-[10px] rounded-md font-bold text-white ${
+                          enableTelegramSyncState ? 'bg-indigo-600 animate-pulse' : 'bg-[#12092e] border border-zinc-700 text-zinc-404'
+                        }`}
+                      >
+                        {enableTelegramSyncState ? (isAr ? 'مفعّل ✓' : 'On ✓') : (isAr ? 'معطل 🛑' : 'Off 🛑')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2 pt-1 border-t border-[#cbd5e1]/5">
+                  <button
+                    type="button"
+                    disabled={telegramTestLoading}
+                    onClick={async () => {
+                      if (!telegramUsernameInput.trim()) {
+                        alert(isAr ? 'يرجى كتابة معرّف التليجرام أولاً!' : 'Please write receiver telegram handle first');
+                        return;
+                      }
+                      setTelegramTestLoading(true);
+                      try {
+                        const response = await fetch('/api/google/notify', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            message: `💡 فحص فوري لربط متجر S&L PREMIUM STORE:\nبوت تليجرام السحابي متصل بنجاح مع المتجر ونظام الربط جاهز! 🇧🇭`,
+                            username: telegramUsernameInput
+                          })
+                        });
+                        
+                        const result = await response.json();
+                        if (response.ok) {
+                          alert(isAr ? '✅ نجح! تم إرسال رسالة تجريبية فورية لحساب تليجرام بنجاح.' : '✅ Succeeded! Received a test ping alert on your Telgram.');
+                        } else {
+                          alert(`❌ ${result.error || 'Failed CallMeBot Telegram API'}`);
+                        }
+                      } catch (err: any) {
+                        alert(`❌ Telegram Test failed: ${err.message}`);
+                      } finally {
+                        setTelegramTestLoading(false);
+                      }
+                    }}
+                    className="flex-1 bg-sky-650 hover:bg-sky-600 text-white font-black text-center py-2.5 rounded-xl text-xs cursor-pointer transition shadow-md"
+                  >
+                    🔋 {isAr ? 'إرسال إشعار تليجرام تجريبي للتأكد من الاتصال' : 'Send Test Telegram Alert'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSaveStoreSettings({
+                        ...storeSettings,
+                        telegramUsername: telegramUsernameInput.trim(),
+                        enableTelegramSync: enableTelegramSyncState,
+                        enableSheetsSync: enableSheetsSyncState
+                      });
+                      alert(isAr ? '✓ تم حفظ تشكيلات وقنوات الربط بنجاح!' : '✓ Integrations & routers preferences secured!');
+                    }}
+                    className="bg-[#8b5cf6] hover:bg-[#a855f7] text-white font-black text-center px-6 py-2.5 rounded-xl text-xs cursor-pointer transition shadow-md"
+                  >
+                    💾 {isAr ? 'حفظ إعدادات الربط' : 'Save Connection Details'}
+                  </button>
+                </div>
+              </div>
+
+              {/* 4. GOOGLE DRIVE BACKUP & ACCESS */}
+              <div className="p-4 rounded-2xl bg-[#1b124a]/20 border border-[#8b5cf6]/20 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <HardDrive className="text-amber-400" size={16} />
+                    <h5 className="text-xs font-black text-white">
+                      {isAr ? 'مركز النسخ الاحتياطي السحابي (Google Drive Archive)' : 'Google Drive Cloud Storage Backups'}
+                    </h5>
+                  </div>
+                  {googleToken && (
+                    <button
+                      type="button"
+                      disabled={uploadingBackup}
+                      onClick={async () => {
+                        setUploadingBackup(true);
+                        try {
+                          await uploadBackupToGoogleDrive(googleToken, storeSettings.storeName, orders);
+                          alert(isAr 
+                            ? '✅ تم تصدير وحفظ نسخة احتياطية مشفرة لجميع الطلبات في Google Drive بنجاح!' 
+                            : '✅ Successfully uploaded order ledger backup file into Google Drive!');
+                          
+                          // Refresh file list
+                          const freshFiles = await listGoogleDriveFiles(googleToken);
+                          setDriveFiles(freshFiles);
+                        } catch (err: any) {
+                          alert(isAr ? `❌ فشل الرفع لـ Drive: ${err.message}` : `❌ Drive upload failed: ${err.message}`);
+                        } finally {
+                          setUploadingBackup(false);
+                        }
+                      }}
+                      className="bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] px-3.5 py-1.5 rounded-xl flex items-center gap-1 transition cursor-pointer"
+                    >
+                      {uploadingBackup ? (
+                        <>
+                          <RefreshCw size={11} className="animate-spin" />
+                          <span>{isAr ? 'جاري تصدير النسخة...' : 'Archiving...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>📦 {isAr ? 'إنشاء نسخة احتياطية الآن' : 'Create JSON Backup'}</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                  {isAr 
+                    ? 'قم بحفظ قائمة طلباتك وعملياتك بشكل آمن على مساحة قوقل درايف الخاصة بك لتأمين معلومات الفواتير البحرينية والشحن المدمج.' 
+                    : 'Safely backup and archive your Bahrain order catalog spreadsheets and customer details straight inside your dynamic Google Drive storage.'}
+                </p>
+
+                {googleToken ? (
+                  <div className="space-y-2 mt-2">
+                    <span className="text-[9px] uppercase tracking-wider text-amber-400 font-bold block">
+                      {isAr ? '📂 ملفات النسخ الاحتياطية الأخيرة في Drive:' : '📂 Recent Backups & Logs on Drive:'}
+                    </span>
+                    
+                    {fetchingDriveFiles ? (
+                      <div className="flex items-center justify-center p-4 text-xs text-zinc-400 gap-2">
+                        <RefreshCw size={14} className="animate-spin text-amber-400" />
+                        <span>{isAr ? 'جاري جرد ملفات Google Drive...' : 'Querying Google Drive files...'}</span>
+                      </div>
+                    ) : driveFiles.length > 0 ? (
+                      <div className="max-h-40 overflow-y-auto divide-y divide-zinc-800 border border-zinc-800/40 rounded-xl bg-[#0e0725] px-2">
+                        {driveFiles.map((file) => (
+                          <div key={file.id} className="py-2 flex items-center justify-between text-[10px] gap-2">
+                            <span className="text-zinc-300 truncate font-mono max-w-[200px]" title={file.name}>
+                              {file.name}
+                            </span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-zinc-500 text-[8.5px]">
+                                {file.createdTime ? new Date(file.createdTime).toLocaleDateString() : ''}
+                              </span>
+                              {file.webViewLink && (
+                                <a
+                                  href={file.webViewLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-amber-400 hover:underline font-bold text-[9px]"
+                                >
+                                  {isAr ? '👀 استعراض' : '👀 View'}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center rounded-xl bg-zinc-900/35 border border-dashed border-zinc-800 text-zinc-500 text-[10px]">
+                        {isAr ? 'لا توجد فواتير أو نسخ مرفوعة بعد. انقر على الزر بالاعلى لرفع أول نسخة!' : 'No backup files found. Press "Create JSON Backup" above to seed your first archive!'}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-zinc-950/40 rounded-xl text-[9.5px] text-zinc-400 border border-zinc-900">
+                    ⚠️ {isAr ? 'ميزة تصفح ونسخ ملفات Google Drive تتطلب تسجيل الدخول المعتمد بالخطوة الأولى.' : 'Google Drive automatic snapshots require Google Authorized context. Connect at the top.'}
+                  </div>
+                )}
+              </div>
+
+              {/* 5. FIRESTORE DATABASE SYNCHRONIZATION */}
+              <div className="p-4 rounded-2xl bg-[#1b124a]/20 border border-[#8b5cf6]/20 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Database className="text-cyan-450" size={16} />
+                  <h5 className="text-xs font-black text-white">
+                    {isAr ? 'مزامنة السحابة الفورية - قاعدة بيانات Firebase' : 'Cloud Firestore Database Management'}
+                  </h5>
+                </div>
+
+                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                  {isAr 
+                    ? 'يقوم هذا الخيار بربط المتجر بقاعدة بيانات Google Firestore السحابية والمؤمنة بقواعد حماية صارمة كقاعدة بيانات بديلة لـ Supabase لتأمين المعاملات واللوحات الحية.' 
+                    : 'Bind S&L Customer order transactions to secured, reliable Google Firebase Firestore document storage as a persistent alternate syncing database.'}
+                </p>
+
+                <div className="bg-cyan-950/10 border border-cyan-500/20 p-2.5 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                    <span className="text-[10px] font-bold text-cyan-400 font-sans">
+                      {isAr ? 'الحالة الحالية: قواعد الحماية نشطة ومؤمنة ✓' : 'Database Rules: Active & Sealed Secures ✓'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const cloudOrders = await listOrdersFromFirestore();
+                        alert(isAr 
+                          ? `🔔 اتصال Firestore سليم ومكتمل بنجاح!\nالعدد الإجمالي للطلبات المسجلة حالياً في السحابة: ${cloudOrders.length}` 
+                          : `🔔 Firestore validation ping completed!\nCurrently backing up ${cloudOrders.length} orders in the cloud.`);
+                      } catch (err: any) {
+                        alert(`❌ Test query failed: ${err.message}`);
+                      }
+                    }}
+                    className="text-[9px] font-bold text-cyan-300 border border-cyan-500/35 px-2.5 py-1 rounded-lg hover:bg-cyan-500/10 transition cursor-pointer font-sans"
+                  >
+                    🔍 {isAr ? 'فحص الاتصال' : 'Test Query'}
+                  </button>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    disabled={firestoreSyncing || orders.length === 0}
+                    onClick={async () => {
+                      if (!window.confirm(isAr 
+                        ? 'هل تريد بدء عملية مزامنة هجرة شاملة لكافة الطلبات المحلية الحالية إلى قاعدة بيانات Firestore السحابية؟' 
+                        : 'Confirm performing bulk migration of current orders history database to Google Firestore?')) {
+                        return;
+                      }
+                      setFirestoreSyncing(true);
+                      try {
+                        let completedCount = 0;
+                        for (const order of orders) {
+                          await syncOrderToFirestore(order);
+                          completedCount++;
+                        }
+                        alert(isAr 
+                          ? `✓ تم المزامنة بنجاح! تم رفع ومزامنة ${completedCount} طلب إلى Firestore السحابي بالكامل.` 
+                          : `✓ Core Migration Completed! Successfully synced ${completedCount} records to premium cloud storage.`);
+                      } catch (err: any) {
+                        alert(`❌ Firestore Sync Failure: ${err.message}`);
+                      } finally {
+                        setFirestoreSyncing(false);
+                      }
+                    }}
+                    className={`w-full py-2.5 rounded-xl text-center text-[10.5px] font-black cursor-pointer transition ${
+                      orders.length > 0
+                        ? 'bg-cyan-600 hover:bg-cyan-700 text-white shadow-md'
+                        : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {firestoreSyncing ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <RefreshCw size={12} className="animate-spin" />
+                        <span>{isAr ? 'جاري النقل والربط السحابي...' : 'Migrating data fields...'}</span>
+                      </span>
+                    ) : (
+                      <span>⚙️ {isAr ? 'تثبيت ودمج كافة فواتير المتجر المحلية بقاعدة Firestore السحابية' : 'Sync Offline Cash Ledgers to Cloud Firestore Now'}</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Tab 5: Incoming Orders & Activity Logging */}
           {activeTab === 'orders' && (
             <div className="space-y-6">
@@ -1919,6 +2517,70 @@ export default function AdminPanel({
                           </span>
                         </div>
                       </div>
+
+                      {/* Google Actions Ribbon */}
+                      {googleToken && (
+                        <div className="bg-[#12092e]/40 p-2.5 rounded-xl border border-[#cbd5e1]/5 flex flex-wrap gap-2 items-center justify-between font-sans text-xs mt-2" dir="rtl">
+                          <span className="text-[10px] text-zinc-400 font-bold flex items-center gap-1.5">
+                            <Cloud size={12} className="text-purple-450" />
+                            <span>{isAr ? 'عمليات Google Workspace المتوفرة لخدمة تليجرام وبقية الأدوات:' : 'Workspace Utilities:'}</span>
+                          </span>
+                          
+                          <div className="flex gap-2">
+                            {/* Gmail Send Invoice */}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const confirmSend = window.confirm(isAr 
+                                  ? `هل تريد إرسال تفاصيل الفاتورة كاملة للعميل ${ord.customerName} عبر Gmail المعتمد؟` 
+                                  : `Send active transactional order invoice to ${ord.customerName} using Gmail?`);
+                                if (!confirmSend) return;
+
+                                try {
+                                  const success = await sendGmailInvoice(googleToken, ord);
+                                  if (success) {
+                                    alert(isAr 
+                                      ? '✓ تم إرسال فاتورة العميل بنجاح عبر Gmail!' 
+                                      : '✓ Successfully dispatched transactional customer invoice via Gmail!');
+                                  } else {
+                                    alert(isAr ? '❌ فشل إرسال البريد.' : '❌ Failed to send transactional email.');
+                                  }
+                                } catch (err: any) {
+                                  alert(`❌ Gmail Error: ${err.message}`);
+                                }
+                              }}
+                              className="bg-[#1e293b] hover:bg-slate-800 text-slate-200 border border-slate-700/60 px-3 py-1.5 rounded-xl text-[10px] font-black flex items-center gap-1.5 transition cursor-pointer"
+                            >
+                              <Mail size={12} className="text-red-400 font-sans" />
+                              <span>{isAr ? 'إرسال فاتورة Gmail' : 'Send Gmail Invoice'}</span>
+                            </button>
+
+                            {/* Google Tasks Assign */}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const confirmTask = window.confirm(isAr 
+                                  ? 'هل تريد إسناد مهمة تحضير وتوصيل هذا الطلب إلى قائمة مهام Google Tasks الخاصة بك لغد؟' 
+                                  : 'Assign a new shipping & delivery task inside your personal Google Tasks schedule list?');
+                                if (!confirmTask) return;
+
+                                try {
+                                  await createGoogleTaskForOrder(googleToken, ord);
+                                  alert(isAr 
+                                    ? '✓ تم تدوين المهمة وإضافتها بنجاح لجدول أعمال Google Tasks!' 
+                                    : '✓ Dispatch task has been entered successfully to Google Tasks!');
+                                } catch (err: any) {
+                                  alert(`❌ Google Tasks Error: ${err.message}`);
+                                }
+                              }}
+                              className="bg-[#1e293b] hover:bg-slate-800 text-slate-200 border border-slate-700/60 px-3 py-1.5 rounded-xl text-[10px] font-black flex items-center gap-1.5 transition cursor-pointer"
+                            >
+                              <CheckSquare size={12} className="text-blue-400 font-sans" />
+                              <span>{isAr ? 'إسناد مهمة Tasks' : 'Assign Tasks Job'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

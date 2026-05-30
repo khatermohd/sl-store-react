@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      // Admin is the specified support email verified or a designated admin doc
+      return isVerifiedUser() && (
+        request.auth.token.email == 'al7anjri@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+    
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
+    }
+    
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'customerName', 'customerPhone', 'deliveryMethod', 'itemsTotal', 'shippingFee', 'grandTotal', 'status', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.customerName is string && data.customerName.size() <= 200
+        && data.customerPhone is string && data.customerPhone.size() <= 50
+        && data.deliveryMethod is string && (data.deliveryMethod == 'delivery' || data.deliveryMethod == 'pickup')
+        && data.itemsTotal is number
+        && data.shippingFee is number
+        && data.grandTotal is number
+        && data.status is string && (data.status == 'pending' || data.status == 'processed' || data.status == 'completed' || data.status == 'cancelled')
+        && data.createdAt is string && data.createdAt.size() <= 100;
+    }
+    
+    match /orders/{orderId} {
+      // Allow any user (public) to read a single order to track, or update or create their own order
+      allow get: if isValidId(orderId);
+      allow list: if isAdmin(); // only admin can list all orders
+      
+      allow create: if isValidId(orderId) && isValidOrder(incoming()) && incoming().status == 'pending';
+      allow delete: if isAdmin();
+      
+      allow update: if isValidId(orderId) && (
+        isAdmin() || (
+          isValidOrder(incoming()) && 
+          incoming().id == existing().id && 
+          incoming().customerName == existing().customerName &&
+          incoming().createdAt == existing().createdAt &&
+          // Action: Customer cancels their own pending order
+          incoming().status == 'cancelled' && existing().status == 'pending' &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+        )
+      );
+    }
+    
+    // Explicit match block admins collection to avoid open permissions
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false; 
+    }
+  }
+}
