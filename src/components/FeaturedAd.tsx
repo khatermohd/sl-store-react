@@ -79,6 +79,27 @@ export default function FeaturedAd({ ad, lang }: FeaturedAdProps) {
           </span>
         </div>
       )}
+
+      {/* Styled written text promo below the image/video to keep the banner 100% visible and clear */}
+      {ad.showOverlayText !== false && (ad.titleAr || ad.titleEn || ad.descriptionAr || ad.descriptionEn) && (
+        <div className="p-3 sm:p-4 bg-[#0d0526] text-white flex flex-col justify-end border-t border-[#8b5cf6]/30 transition-all">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="inline-flex items-center justify-center bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+              ⚡ {isAr ? 'عرض مميز' : 'SPECIAL PROMO'}
+            </span>
+            {(isAr ? ad.titleAr : ad.titleEn) && (
+              <h4 className="text-xs sm:text-sm font-black text-white">
+                {isAr ? ad.titleAr : ad.titleEn}
+              </h4>
+            )}
+          </div>
+          {(isAr ? ad.descriptionAr : ad.descriptionEn) && (
+            <p className="text-[10.5px] sm:text-xs text-zinc-350 leading-relaxed font-semibold">
+              {isAr ? ad.descriptionAr : ad.descriptionEn}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 

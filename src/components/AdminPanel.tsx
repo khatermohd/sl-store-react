@@ -71,6 +71,7 @@ export default function AdminPanel({
   const [adImg, setAdImg] = useState(storeSettings.topAd.imageUrl);
   const [adClient, setAdClient] = useState(storeSettings.topAd.adsenseClient);
   const [adSlot, setAdSlot] = useState(storeSettings.topAd.adsenseSlot);
+  const [adShowOverlayText, setAdShowOverlayText] = useState(storeSettings.topAd.showOverlayText !== false);
 
   // 2. Product editing state (can use this for adding/editing a product)
   const [prodIdToEdit, setProdIdToEdit] = useState<string | null>(null);
@@ -364,7 +365,8 @@ export default function AdminPanel({
         linkUrl: adLink.trim(),
         imageUrl: adImg.trim(),
         adsenseClient: adClient.trim(),
-        adsenseSlot: adSlot.trim()
+        adsenseSlot: adSlot.trim(),
+        showOverlayText: adShowOverlayText
       }
     });
 
@@ -963,6 +965,30 @@ export default function AdminPanel({
                         </div>
                       </div>
                     </div>
+
+                    {/* Toggle overlay text on ad */}
+                    <div className="p-3 bg-[#11053b] border border-[#cbd5e1]/5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mt-2.5">
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] font-extrabold text-cyan-400 block flex items-center gap-1.5">
+                          <span>✍️</span>
+                          <span>{isAr ? 'عرض النصوص والمطالعة المكتوبة فوق الإعلان المخصص' : 'Render custom text overlay on banner'}</span>
+                        </span>
+                        <p className="text-[10px] text-zinc-400 leading-relaxed">
+                          {isAr ? 'تفعيل كتابة العنوان والوصف الترويجي كشريط أنيق تحت الإعلان لجلب المبيعات والزوار.' 
+                               : 'Enables overlaying the written promo title & description as a beautiful caption bar.'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAdShowOverlayText(!adShowOverlayText)}
+                        className={`px-3.5 py-2 text-[10px] whitespace-nowrap font-bold rounded-lg transition-all cursor-pointer ${
+                          adShowOverlayText ? 'bg-cyan-500 text-black shadow-md' : 'bg-[#12092e] border border-zinc-700 text-zinc-400'
+                        }`}
+                      >
+                        {adShowOverlayText ? (isAr ? 'مفعّل ✓' : 'Enabled ✓') : (isAr ? 'معطّل 🛑' : 'Disabled 🛑')}
+                      </button>
+                    </div>
+
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-[#12092e]/40 p-3 rounded-xl border border-[#8b5cf6]/10">
@@ -1059,6 +1085,7 @@ export default function AdminPanel({
                       <option value="perfumes">💨 {isAr ? 'العطور والبخور' : 'Fragrances'}</option>
                       <option value="children">👶 {isAr ? 'أطفال' : 'Children'}</option>
                       <option value="games">🎮 {isAr ? 'العاب' : 'Video Games'}</option>
+                      <option value="ladies">👜 {isAr ? 'قسم السيدات' : 'Women\'s Section'}</option>
                       <option value="clothes">👕 {isAr ? 'الملابس' : 'Clothes'}</option>
                       <option value="rent">🔑 {isAr ? 'إيجار' : 'Rent'}</option>
                       <option value="others">👜 {isAr ? 'أخرى' : 'Others'}</option>

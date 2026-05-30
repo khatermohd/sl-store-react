@@ -36,18 +36,19 @@ export default function Header({
 }: HeaderProps) {
   const isAr = lang === 'ar';
 
-  // The 10 categories requested by the user: (السيارات، المنزل، إلكترونيات، العطور والبخور، أطفال، العاب، الملابس، إيجار، كوبونات، أخرى)
+  // Store categories of the integrated web shop: Text-only as requested by the user, with "قسم السيدات" added
   const categoryTabs = [
-    { id: 'cars', type: 'products', titleAr: 'السيارات 🚗', titleEn: 'Cars 🚗', emoji: '🚗' },
-    { id: 'home', type: 'products', titleAr: 'المنزل 🏠', titleEn: 'Home 🏠', emoji: '🏠' },
-    { id: 'electronics', type: 'products', titleAr: 'إلكترونيات 💻', titleEn: 'Electronics 💻', emoji: '💻' },
-    { id: 'perfumes', type: 'products', titleAr: 'العطور والبخور 💨', titleEn: 'Fragrances 💨', emoji: '💨' },
-    { id: 'children', type: 'products', titleAr: 'أطفال 👶', titleEn: 'Children 👶', emoji: '👶' },
-    { id: 'games', type: 'products', titleAr: 'العاب 🎮', titleEn: 'Video Games 🎮', emoji: '🎮' },
-    { id: 'clothes', type: 'products', titleAr: 'الملابس 👕', titleEn: 'Clothes 👕', emoji: '👕' },
-    { id: 'rent', type: 'products', titleAr: 'إيجار 🔑', titleEn: 'Rent 🔑', emoji: '🔑' },
-    { id: 'coupons', type: 'coupons', titleAr: 'كوبونات 🎟️', titleEn: 'Coupons 🎟️', emoji: '🎟️' },
-    { id: 'others', type: 'products', titleAr: 'أخرى 👜', titleEn: 'Others 👜', emoji: '👜' }
+    { id: 'cars', type: 'products', titleAr: 'السيارات', titleEn: 'Cars' },
+    { id: 'home', type: 'products', titleAr: 'المنزل', titleEn: 'Home' },
+    { id: 'electronics', type: 'products', titleAr: 'إلكترونيات', titleEn: 'Electronics' },
+    { id: 'perfumes', type: 'products', titleAr: 'العطور والبخور', titleEn: 'Fragrances' },
+    { id: 'children', type: 'products', titleAr: 'أطفال', titleEn: 'Children' },
+    { id: 'games', type: 'products', titleAr: 'العاب', titleEn: 'Games' },
+    { id: 'ladies', type: 'products', titleAr: 'قسم السيدات', titleEn: 'Women\'s Section' },
+    { id: 'clothes', type: 'products', titleAr: 'الملابس', titleEn: 'Clothes' },
+    { id: 'rent', type: 'products', titleAr: 'إيجار', titleEn: 'Rent' },
+    { id: 'coupons', type: 'coupons', titleAr: 'كوبونات', titleEn: 'Coupons' },
+    { id: 'others', type: 'products', titleAr: 'أخرى', titleEn: 'Others' }
   ];
 
   const handleTabClick = (tab: typeof categoryTabs[0]) => {
@@ -140,36 +141,24 @@ export default function Header({
       {/* We build a horizontal grid/collection of rounded cards style */}
       <div className="border-t border-[#8b5cf6]/15 pt-4">
         <div className="text-[10.5px] font-black text-zinc-400 mb-3 block px-1 tracking-wider uppercase">
-          {isAr ? 'أقسام المتجر المتكاملة 🛍️' : 'STORE DEPARTMENTS 🛍️'}
+          {isAr ? 'أقسام المتجر المتكاملة' : 'STORE DEPARTMENTS'}
         </div>
 
-        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-1.5 sm:gap-2.5 w-full">
+        <div className="flex flex-wrap gap-2 w-full">
           {categoryTabs.map((tab) => {
             const active = isTabActive(tab);
             return (
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab)}
-                className={`relative flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl transition-all duration-300 group cursor-pointer border ${
+                className={`flex items-center justify-center px-4 py-2.5 rounded-full transition-all duration-300 cursor-pointer text-xs font-black border ${
                   active
-                    ? 'bg-gradient-to-b from-[#8b5cf6]/35 to-[#d946ef]/20 border-[#d946ef] shadow-[0_0_15px_rgba(217,70,239,0.35)] scale-[0.98]'
-                    : 'bg-[#12092e]/45 border-[#8b5cf6]/15 hover:border-[#8b5cf6]/50 hover:bg-[#12092e]/80'
+                    ? 'bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] border-transparent text-white shadow-[0_0_15px_rgba(217,70,239,0.35)] scale-[0.98]'
+                    : 'bg-[#12092e]/45 border-[#8b5cf6]/15 text-zinc-300 hover:border-[#8b5cf6]/60 hover:text-white hover:bg-[#12092e]/80'
                 }`}
               >
-                {/* Bigger Emoji for aesthetic depth */}
-                <div className="text-2xl sm:text-3xl mb-2 transition duration-350 group-hover:scale-110">
-                  {tab.emoji}
-                </div>
-
-                {/* Structured label */}
-                <span className="text-[11px] sm:text-xs font-black tracking-tight text-white leading-none whitespace-nowrap text-center">
-                  {isAr ? tab.titleAr.split(' ')[0] : tab.titleEn.split(' ')[0]}
-                </span>
-
-                {/* Bottom colored indicator bar under active category */}
-                {active && (
-                  <span className="absolute bottom-1.5 w-6 h-0.5 bg-gradient-to-r from-amber-400 to-[#d946ef] rounded-full"></span>
-                )}
+                {/* Structured label or full name directly */}
+                <span>{isAr ? tab.titleAr : tab.titleEn}</span>
               </button>
             );
           })}

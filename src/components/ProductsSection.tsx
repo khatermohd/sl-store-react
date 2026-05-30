@@ -48,6 +48,7 @@ export default function ProductsSection({
     { id: 'perfumes', titleAr: 'العطور والبخور', titleEn: 'Fragrances', image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=150&auto=format&fit=crop&q=60', emoji: '💨' },
     { id: 'children', titleAr: 'أطفال', titleEn: 'Children', image: 'https://images.unsplash.com/photo-1515488042361-404e9250afef?w=150&auto=format&fit=crop&q=60', emoji: '👶' },
     { id: 'games', titleAr: 'العاب', titleEn: 'Video Games', image: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=60', emoji: '🎮' },
+    { id: 'ladies', titleAr: 'قسم السيدات', titleEn: 'Women\'s Section', image: 'https://images.unsplash.com/photo-1509319117193-57bab727e09d?w=150&auto=format&fit=crop&q=60', emoji: '👜' },
     { id: 'clothes', titleAr: 'الملابس', titleEn: 'Clothes', image: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=150&auto=format&fit=crop&q=60', emoji: '👕' },
     { id: 'rent', titleAr: 'إيجار', titleEn: 'Rent', image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=150&auto=format&fit=crop&q=60', emoji: '🔑' },
     { id: 'others', titleAr: 'أخرى', titleEn: 'Others', image: 'https://images.unsplash.com/photo-1517423568366-8b83523034fd?w=150&auto=format&fit=crop&q=60', emoji: '👜' }
@@ -76,7 +77,7 @@ export default function ProductsSection({
     const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           desc.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const knownCategories = ['cars', 'home', 'electronics', 'perfumes', 'children', 'games', 'clothes', 'rent'];
+    const knownCategories = ['cars', 'home', 'electronics', 'perfumes', 'children', 'games', 'ladies', 'clothes', 'rent'];
     let matchesCategory = true;
     if (activeCategory === 'all') {
       matchesCategory = true;

@@ -255,7 +255,8 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
     linkUrl: 'https://wa.me/97337120456',
     imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=1200',
     adsenseClient: 'ca-pub-1208489237840199',
-    adsenseSlot: '8033541109'
+    adsenseSlot: '8033541109',
+    showOverlayText: true
   },
   deliveryFee: 3,
   googleSpreadsheetId: "",

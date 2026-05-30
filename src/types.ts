@@ -65,6 +65,7 @@ export interface AdBanner {
   imageUrl: string;
   adsenseClient: string;
   adsenseSlot: string;
+  showOverlayText?: boolean;
 }
 
 export interface StoreSettings {
