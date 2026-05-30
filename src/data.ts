@@ -263,6 +263,9 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   googleFormId: "",
   googleFormUrl: "",
   telegramUsername: "@ShopSLbh",
+  telegramBotToken: "",
+  telegramChatId: "",
+  useCustomTelegramBot: false,
   enableTelegramSync: true,
   enableSheetsSync: true
 };

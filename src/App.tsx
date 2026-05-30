@@ -123,6 +123,12 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('sl_store_settings', JSON.stringify(storeSettings));
+    // Sync settings to server for real-time backend notifications (such as custom Telegram Bot)
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(storeSettings)
+    }).catch(err => console.error("Server API offline; using local cache", err));
   }, [storeSettings]);
 
   useEffect(() => {

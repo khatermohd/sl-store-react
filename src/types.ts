@@ -80,6 +80,9 @@ export interface StoreSettings {
   googleFormId?: string;
   googleFormUrl?: string;
   telegramUsername?: string;
+  telegramBotToken?: string;
+  telegramChatId?: string;
+  useCustomTelegramBot?: boolean;
   enableTelegramSync?: boolean;
   enableSheetsSync?: boolean;
 }

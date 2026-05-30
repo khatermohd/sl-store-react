@@ -120,6 +120,9 @@ export default function AdminPanel({
   // Form and Sheet Sync Status States
   const [telegramTestLoading, setTelegramTestLoading] = useState(false);
   const [telegramUsernameInput, setTelegramUsernameInput] = useState(storeSettings.telegramUsername || '@ShopSLbh');
+  const [telegramBotTokenInput, setTelegramBotTokenInput] = useState(storeSettings.telegramBotToken || '');
+  const [telegramChatIdInput, setTelegramChatIdInput] = useState(storeSettings.telegramChatId || '');
+  const [useCustomTelegramBotState, setUseCustomTelegramBotState] = useState(storeSettings.useCustomTelegramBot || false);
   const [enableTelegramSyncState, setEnableTelegramSyncState] = useState(storeSettings.enableTelegramSync !== false);
   const [enableSheetsSyncState, setEnableSheetsSyncState] = useState(storeSettings.enableSheetsSync !== false);
 
@@ -1916,60 +1919,185 @@ export default function AdminPanel({
                   <h5 className="text-xs font-black text-white">{isAr ? 'ربط إشعارات بوت تليجرام الفوري (Telegram Bot Automation)' : 'Telegram Notification Channel Routing'}</h5>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10.5px] font-bold text-zinc-350 block mb-1">
-                      {isAr ? 'معرف حساب أو قناة التليجرام (للجبهة والمالك خاطر):' : 'Telegram Bot recipient Username / group:'}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={telegramUsernameInput}
-                      onChange={(e) => setTelegramUsernameInput(e.target.value)}
-                      placeholder="@ShopSLbh"
-                      className="w-full text-xs font-mono p-2.5 bg-[#12092e] text-white border border-[#8b5cf6]/25 rounded-xl outline-none"
-                    />
+                {/* Integration Type Switcher */}
+                <div className="bg-[#12092e] p-1 rounded-xl border border-[#cbd5e1]/5 flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setUseCustomTelegramBotState(false)}
+                    className={`flex-1 py-2 text-center rounded-lg text-xs font-bold transition ${
+                      !useCustomTelegramBotState
+                        ? 'bg-[#8b5cf6] text-white shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    🚀 {isAr ? 'خدمة CallMeBot العامة' : 'CallMeBot (Default Service)'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUseCustomTelegramBotState(true)}
+                    className={`flex-1 py-2 text-center rounded-lg text-xs font-bold transition ${
+                      useCustomTelegramBotState
+                        ? 'bg-cyan-600 text-white shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    🤖 {isAr ? 'إنشاء واستخدم بوت التليجرام الخاص بي' : 'My Own Private Telegram Bot'}
+                  </button>
+                </div>
+
+                {!useCustomTelegramBotState ? (
+                  /* CallMeBot Settings */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10.5px] font-bold text-zinc-350 block mb-1">
+                        {isAr ? 'معرف حساب أو قناة التليجرام (للجبهة والمالك خاطر):' : 'Telegram Bot recipient Username / group:'}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={telegramUsernameInput}
+                        onChange={(e) => setTelegramUsernameInput(e.target.value)}
+                        placeholder="@ShopSLbh"
+                        className="w-full text-xs font-mono p-2.5 bg-[#12092e] text-white border border-[#8b5cf6]/25 rounded-xl outline-none"
+                      />
+                    </div>
+                    
+                    <div className="flex flex-col justify-end space-y-2.5">
+                      <div className="flex items-center justify-between text-xs font-semibold text-zinc-400 bg-[#12092e] px-3 py-2.5 rounded-xl border border-[#cbd5e1]/5">
+                        <span>{isAr ? 'تنبيه التليجرام عند العمليات الجديدة:' : 'Sync triggers to Telegram alerts:'}</span>
+                        <button
+                          type="button"
+                          onClick={() => setEnableTelegramSyncState(!enableTelegramSyncState)}
+                          className={`px-3 py-1 text-[10px] rounded-md font-bold text-white ${
+                            enableTelegramSyncState ? 'bg-indigo-600 animate-pulse' : 'bg-[#12092e] border border-zinc-700 text-zinc-404'
+                          }`}
+                        >
+                          {enableTelegramSyncState ? (isAr ? 'مفعّل ✓' : 'On ✓') : (isAr ? 'معطل 🛑' : 'Off 🛑')}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="flex flex-col justify-end space-y-2.5">
+                ) : (
+                  /* Custom Bot Settings from BotFather */
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10.5px] font-bold text-zinc-355 block mb-1">
+                          🔑 {isAr ? 'رمز البوت الخاص بك (Bot Token):' : 'Telegram Bot Token (from BotFather):'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={telegramBotTokenInput}
+                          onChange={(e) => setTelegramBotTokenInput(e.target.value)}
+                          placeholder="1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                          className="w-full text-xs font-mono p-2.5 bg-[#12092e] text-white border border-cyan-500/25 rounded-xl outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10.5px] font-bold text-zinc-355 block mb-1">
+                          🆔 {isAr ? 'معرّف المحادثة أو القناة (Chat ID / Channel ID):' : 'Telegram Chat ID or @ChannelHandle:'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={telegramChatIdInput}
+                          onChange={(e) => setTelegramChatIdInput(e.target.value)}
+                          placeholder="-1001234567890 or 987654321"
+                          className="w-full text-xs font-mono p-2.5 bg-[#12092e] text-white border border-cyan-500/25 rounded-xl outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Short Arabic & English Helper Steps */}
+                    <div className="p-3 bg-[#0d0724] rounded-xl border border-[#cbd5e1]/5 text-[10.5px] text-zinc-300 leading-relaxed space-y-2">
+                      <span className="font-bold text-cyan-400 block">💡 {isAr ? 'كيف تصنع وتستعمل البوت الخاص بك خلال دقيقة واحدة؟' : 'How to set up and get your Telegram Bot in 1 minute:'}</span>
+                      
+                      {isAr ? (
+                        <ol className="list-decimal list-inside space-y-1 text-zinc-400 text-[10px]">
+                          <li>ابحث في تليجرام عن الحساب المعتمد <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-cyan-400 underline font-semibold">@BotFather</a> وأرسل له الأمر <code className="bg-[#12092e] text-zinc-200 px-1.5 py-0.5 rounded font-mono text-[9px]">/newbot</code>.</li>
+                          <li>اختر اسماً للبوت، ثم معرفاً ينتهي بـ <code className="bg-[#12092e] text-indigo-300 px-1.5 py-0.5 rounded font-mono text-[9px]">_bot</code>، وانسخ <b>الرمز الفني (Token)</b> الذي يمنحك إياه.</li>
+                          <li>افتح البوت الجديد الذي أنشأته واضغط <b>ابدأ (Start)</b> (أو أضفه كـ مشرف Admin بقناتك أو مجموعتك).</li>
+                          <li>لمعرفة رقم الـ Chat ID الخاص بك، ابحث عن بوت مثل <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" className="text-cyan-400 underline font-semibold">@userinfobot</a> أو <a href="https://t.me/GetMyChatID_Bot" target="_blank" rel="noreferrer" className="text-cyan-400 underline font-semibold">@GetMyChatID_Bot</a> وأرسل له أي رسالة وسيعطيك الرقم فوراً. أدرجه بالاعلى!</li>
+                        </ol>
+                      ) : (
+                        <ol className="list-decimal list-inside space-y-1 text-zinc-400 text-[10px]">
+                          <li>Open Telegram, search for verified <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-cyan-400 underline font-semibold">@BotFather</a> and send <code className="bg-[#12092e] text-zinc-200 px-1.5 py-0.5 rounded font-mono text-[9px]">/newbot</code>.</li>
+                          <li>Choose a bot name and a username ending in <code className="bg-[#12092e] text-cyan-300 px-1.5 py-0.5 rounded font-mono text-[9px]">_bot</code>, then copy your <b>Bot Token</b>.</li>
+                          <li>Open your newly created bot, press <b>Start</b> (or add the bot as Admin inside your specific group or channel).</li>
+                          <li>To fetch your numeric <b>Chat ID</b>, search for <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" className="text-cyan-400 underline font-semibold">@userinfobot</a> or <a href="https://t.me/GetMyChatID_Bot" target="_blank" rel="noreferrer" className="text-cyan-400 underline font-semibold">@GetMyChatID_Bot</a> on Telegram, start it to acquire your ID instantly.</li>
+                        </ol>
+                      )}
+                    </div>
+                    
                     <div className="flex items-center justify-between text-xs font-semibold text-zinc-400 bg-[#12092e] px-3 py-2.5 rounded-xl border border-[#cbd5e1]/5">
                       <span>{isAr ? 'تنبيه التليجرام عند العمليات الجديدة:' : 'Sync triggers to Telegram alerts:'}</span>
                       <button
                         type="button"
                         onClick={() => setEnableTelegramSyncState(!enableTelegramSyncState)}
                         className={`px-3 py-1 text-[10px] rounded-md font-bold text-white ${
-                          enableTelegramSyncState ? 'bg-indigo-600 animate-pulse' : 'bg-[#12092e] border border-zinc-700 text-zinc-404'
+                          enableTelegramSyncState ? 'bg-[#0891b2] animate-pulse' : 'bg-[#12092e] border border-zinc-700 text-zinc-404'
                         }`}
                       >
                         {enableTelegramSyncState ? (isAr ? 'مفعّل ✓' : 'On ✓') : (isAr ? 'معطل 🛑' : 'Off 🛑')}
                       </button>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-2 pt-1 border-t border-[#cbd5e1]/5">
                   <button
                     type="button"
                     disabled={telegramTestLoading}
                     onClick={async () => {
-                      if (!telegramUsernameInput.trim()) {
-                        alert(isAr ? 'يرجى كتابة معرّف التليجرام أولاً!' : 'Please write receiver telegram handle first');
-                        return;
+                      if (useCustomTelegramBotState) {
+                        if (!telegramBotTokenInput.trim() || !telegramChatIdInput.trim()) {
+                          alert(isAr 
+                            ? 'يرجى ملء الرمز الفني (Token) ورقم المحادثة (Chat ID) أولاً لإجراء الفحص!' 
+                            : 'Please write both your Bot Token and Chat ID first to make a verification check!');
+                          return;
+                        }
+                      } else {
+                        if (!telegramUsernameInput.trim()) {
+                          alert(isAr ? 'يرجى كتابة معرّف التليجرام أولاً!' : 'Please write receiver telegram handle first');
+                          return;
+                        }
                       }
+                      
                       setTelegramTestLoading(true);
+                      
+                      // Temporarily register settings to server cache to ensure testing is done with currently written parameters
                       try {
+                        await fetch('/api/settings', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            ...storeSettings,
+                            telegramUsername: telegramUsernameInput.trim(),
+                            telegramBotToken: telegramBotTokenInput.trim(),
+                            telegramChatId: telegramChatIdInput.trim(),
+                            useCustomTelegramBot: useCustomTelegramBotState,
+                            enableTelegramSync: enableTelegramSyncState,
+                          })
+                        });
+
                         const response = await fetch('/api/google/notify', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
-                            message: `💡 فحص فوري لربط متجر S&L PREMIUM STORE:\nبوت تليجرام السحابي متصل بنجاح مع المتجر ونظام الربط جاهز! 🇧🇭`,
-                            username: telegramUsernameInput
+                            message: useCustomTelegramBotState 
+                              ? `⚙️ <b>فحص الربط السحابي لـ S&L PREMIUM STORE</b>\n\n✓ تم ربط البوت الخاص بك وتفعيله بنجاح!\n✓ البوت أصبح يستقبل إشعارات المبيعات والفواتير الحية الآن بصورة ممتازة. 🇧🇭`
+                              : `💡 فحص فوري لربط متجر S&L PREMIUM STORE:\nبوت تليجرام السحابي متصل بنجاح مع المتجر ونظام الربط جاهز! 🇧🇭`,
+                            username: telegramUsernameInput.trim()
                           })
                         });
                         
                         const result = await response.json();
                         if (response.ok) {
-                          alert(isAr ? '✅ نجح! تم إرسال رسالة تجريبية فورية لحساب تليجرام بنجاح.' : '✅ Succeeded! Received a test ping alert on your Telgram.');
+                          alert(isAr 
+                            ? '✅ نجح الفحص! تم إرسال رسالة تجريبية فورية لحساب تليجرام الخاص بك بنجاح.' 
+                            : '✅ Succeeded! Received a test ping alert on your Telegram handle.');
                         } else {
                           alert(`❌ ${result.error || 'Failed CallMeBot Telegram API'}`);
                         }
@@ -1986,13 +2114,29 @@ export default function AdminPanel({
 
                   <button
                     type="button"
-                    onClick={() => {
-                      onSaveStoreSettings({
+                    onClick={async () => {
+                      const updatedSettings = {
                         ...storeSettings,
                         telegramUsername: telegramUsernameInput.trim(),
+                        telegramBotToken: telegramBotTokenInput.trim(),
+                        telegramChatId: telegramChatIdInput.trim(),
+                        useCustomTelegramBot: useCustomTelegramBotState,
                         enableTelegramSync: enableTelegramSyncState,
                         enableSheetsSync: enableSheetsSyncState
-                      });
+                      };
+                      
+                      onSaveStoreSettings(updatedSettings);
+
+                      try {
+                        await fetch('/api/settings', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(updatedSettings)
+                        });
+                      } catch (err) {
+                        console.error('Failed to sync settings file to server node:', err);
+                      }
+
                       alert(isAr ? '✓ تم حفظ تشكيلات وقنوات الربط بنجاح!' : '✓ Integrations & routers preferences secured!');
                     }}
                     className="bg-[#8b5cf6] hover:bg-[#a855f7] text-white font-black text-center px-6 py-2.5 rounded-xl text-xs cursor-pointer transition shadow-md"

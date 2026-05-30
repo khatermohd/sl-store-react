@@ -14,6 +14,7 @@ async function startServer() {
   const PORT = 3000;
   const DATA_DIR = path.join(process.cwd(), "data");
   const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
+  const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 
   // Ensure dynamic data folder exists
   if (!fs.existsSync(DATA_DIR)) {
@@ -40,6 +41,29 @@ async function startServer() {
       fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2), "utf-8");
     } catch (e) {
       console.error("Error writing orders database:", e);
+    }
+  };
+
+  // Helper to safely load store settings
+  const loadSettings = (): any => {
+    if (!fs.existsSync(SETTINGS_FILE)) {
+      return {};
+    }
+    try {
+      const raw = fs.readFileSync(SETTINGS_FILE, "utf-8");
+      return JSON.parse(raw);
+    } catch (e) {
+      console.error("Error reading settings database:", e);
+      return {};
+    }
+  };
+
+  // Helper to safely write store settings
+  const saveSettings = (settings: any) => {
+    try {
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), "utf-8");
+    } catch (e) {
+      console.error("Error writing settings database:", e);
     }
   };
 
@@ -118,38 +142,93 @@ async function startServer() {
     }
   };
 
-  // Callmebot Telegram Notification Helper
+  // Telegram Notification Helper (Supports Custom Bot + Callmebot fallback)
   const sendCallmebotTelegramNotification = async (order: any) => {
-    const username = "@ShopSLbh";
+    const settings = loadSettings();
+    
+    // Check if Telegram notifications are enabled
+    if (settings.enableTelegramSync === false) {
+      console.log("Telegram notifications are explicitly turned off in store settings.");
+      return;
+    }
 
+    const useCustomBot = settings.useCustomTelegramBot === true;
+    const botToken = settings.telegramBotToken;
+    const chatId = settings.telegramChatId;
+
+    if (useCustomBot && botToken && chatId) {
+      try {
+        console.log(`Sending direct Telegram Bot notification to chat ID ${chatId}...`);
+        
+        const listItems = (order.items || []).map((item: any) => {
+          const title = item.titleAr || item.title || 'منتج';
+          return `▫️ <b>${title}</b> (الكمية: ${item.quantity} × ${item.price} د.ب)`;
+        }).join('\n');
+
+        const messageText = `🔔 <b>طلب جديد في المتجر!</b>
+
+<b>رقم الطلب:</b> <code>#${order.id}</code>
+<b>اسم العميل:</b> ${order.customerName}
+<b>الهاتف:</b> ${order.customerPhone}
+<b>طريقة التوصيل:</b> ${order.deliveryMethod === 'delivery' ? '🚗 توصيل للمنزل' : '🏪 استلام من المحل'}
+${order.customerAddress ? `<b>العنوان:</b> ${order.customerAddress}` : ''}
+
+<b>📦 قائمة المنتجات:</b>
+${listItems}
+
+<b>💰 المجموع الكلي:</b> ${order.grandTotal} د.ب
+<b>التوقيت:</b> ${new Date(order.createdAt).toLocaleString('ar-BH')}
+
+<i>هذه الرسالة مرسلة مباشرة عبر البوت الخاص بك! 🇧🇭</i>`;
+
+        const tgUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        const response = await fetch(tgUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: messageText,
+            parse_mode: "HTML"
+          })
+        });
+
+        if (response.ok) {
+          console.log(`Direct Telegram Bot notification sent successfully for order: ${order.id}`);
+          return; // Avoid falling back to callmebot
+        } else {
+          const errText = await response.text();
+          console.error(`Direct Telegram Bot API failed: ${response.status} - ${errText}. Falling back to CallMeBot.`);
+        }
+      } catch (err: any) {
+        console.error("Direct Telegram Bot execution failed, falling back to CallMeBot:", err.message);
+      }
+    }
+
+    // CallMeBot fallback implementation
+    const username = settings.telegramUsername || "@ShopSLbh";
     try {
       const message = `📦 طلب جديد في المتجر! رقم الطلب: ${order.id} الإجمالي: ${order.grandTotal} BHD`;
       const cleanUsername = username.startsWith("@") ? username : `@${username}`;
       
-      // Let's call multiple possible formats/domains of CallMeBot Telegram service to ensure delivery under any configuration
       const urls = [
-        `https://api.callmebot.com/telegram/group.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`,
         `https://api.callmebot.com/telegram/sendMessage.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`,
-        `https://callmebot.com/telegram/group.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`,
-        `https://callmebot.com/telegram/sendMessage.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`
+        `https://api.callmebot.com/telegram/group.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`
       ];
 
       for (const url of urls) {
         try {
-          console.log(`Sending Telegram callmebot notification to ${cleanUsername} via URL: ${url}`);
+          console.log(`Sending Telegram callmebot fallback notification to ${cleanUsername} via URL: ${url}`);
           const response = await fetch(url);
           if (response.ok) {
-            console.log(`Telegram callmebot request succeeded for URL: ${url}`);
-          } else {
-            const errText = await response.text();
-            console.warn(`Telegram Callmebot request failed for URL: ${url} - Status: ${response.status} - ${errText}`);
+            console.log(`Telegram callmebot fallback request succeeded for URL: ${url}`);
+            break;
           }
         } catch (e: any) {
-          console.error(`Error sending to Callmebot Telegram URL ${url}:`, e.message || e);
+          console.error(`Error sending to Callmebot fallback URL ${url}:`, e.message || e);
         }
       }
     } catch (err: any) {
-      console.error("Failed to process Telegram callmebot notification:", err.message || err);
+      console.error("Failed to process Telegram callmebot fallback notification:", err.message || err);
     }
   };
 
@@ -158,20 +237,68 @@ async function startServer() {
     res.json({ status: "ok", supabase_active: !!supabase });
   });
 
-  // API: Dynamic Telegram notification forwarder
+  // API: Get active store settings
+  app.get("/api/settings", (req, res) => {
+    const settings = loadSettings();
+    res.json(settings);
+  });
+
+  // API: Update store settings (Synchronize settings cache on server)
+  app.post("/api/settings", (req, res) => {
+    const newSettings = req.body;
+    if (!newSettings) {
+      return res.status(400).json({ error: "Invalid settings body" });
+    }
+    saveSettings(newSettings);
+    console.log("Successfully cached store settings on the server side.");
+    res.json({ success: true, settings: newSettings });
+  });
+
+  // API: Dynamic Telegram notification forwarder (Supporting direct custom Telegram Bot + CallMeBot fallback)
   app.post("/api/google/notify", async (req, res) => {
     const { message, username } = req.body;
     if (!message) {
       return res.status(400).json({ error: "Message content is required" });
     }
-    const targetUser = username || "@ShopSLbh";
+
+    const settings = loadSettings();
+    const useCustomBot = settings.useCustomTelegramBot === true;
+    const botToken = settings.telegramBotToken;
+    const chatId = settings.telegramChatId;
+
+    if (useCustomBot && botToken && chatId) {
+      try {
+        console.log(`Sending dynamic/test notification via Custom Telegram Bot to chat ID: ${chatId}`);
+        const tgUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        const response = await fetch(tgUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message,
+            parse_mode: "HTML"
+          })
+        });
+
+        if (response.ok) {
+          return res.json({ success: true, message: `Notification sent directly through custom Telegram Bot to Chat ID: ${chatId}` });
+        } else {
+          const errResText = await response.text();
+          return res.status(400).json({ error: `Custom Telegram Bot error: ${response.status} - ${errResText}` });
+        }
+      } catch (err: any) {
+        return res.status(500).json({ error: `Custom Telegram Bot crash: ${err.message}` });
+      }
+    }
+
+    // CallMeBot fallback
+    const targetUser = username || settings.telegramUsername || "@ShopSLbh";
     const cleanUsername = targetUser.startsWith("@") ? targetUser : `@${targetUser}`;
     
     try {
       const urls = [
         `https://api.callmebot.com/telegram/sendMessage.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`,
-        `https://api.callmebot.com/telegram/group.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`,
-        `https://callmebot.com/telegram/sendMessage.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`
+        `https://api.callmebot.com/telegram/group.php?user=${encodeURIComponent(cleanUsername)}&text=${encodeURIComponent(message)}`
       ];
 
       let success = false;
@@ -180,7 +307,7 @@ async function startServer() {
           const response = await fetch(url);
           if (response.ok) {
             success = true;
-            console.log(`Dynamic Notification sent to Callmebot: ${cleanUsername}`);
+            console.log(`Dynamic Notification sent to Callmebot check: ${cleanUsername}`);
             break;
           }
         } catch (e: any) {
