@@ -52,6 +52,11 @@ export default function App() {
         if (parsed && parsed.socials && (parsed.socials.whatsapp === '97339442011' || !parsed.socials.whatsapp || parsed.socials.whatsapp === '')) {
           parsed.socials.whatsapp = '37120456';
         }
+        if (parsed) {
+          if (parsed.deliveryFee === undefined || parsed.deliveryFee === 3) {
+            parsed.deliveryFee = 2;
+          }
+        }
         return parsed;
       } catch (_) {}
     }
@@ -112,22 +117,102 @@ export default function App() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
-  // Sync state with localStorage
+  // On mount: Load settings, products and coupons from the server
+  useEffect(() => {
+    // 1. Settings reconciliation
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((serverSettings) => {
+        if (serverSettings && serverSettings.storeName) {
+          // Verify deliveryFee is 2 BHD
+          if (serverSettings.deliveryFee === undefined || serverSettings.deliveryFee === 3) {
+            serverSettings.deliveryFee = 2;
+          }
+          setStoreSettings(serverSettings);
+        } else {
+          // If server settings is empty, seed the server with the client's settings
+          const current = { ...storeSettings };
+          if (current.deliveryFee === undefined || current.deliveryFee === 3) {
+            current.deliveryFee = 2;
+          }
+          fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(current)
+          }).catch(err => console.error("Error seeding settings to server:", err));
+        }
+      })
+      .catch((err) => console.error("Error fetching settings:", err));
+
+    // 2. Products reconciliation
+    fetch('/api/products')
+      .then((res) => res.json())
+      .then((serverProds) => {
+        if (serverProds && Array.isArray(serverProds) && serverProds.length > 0) {
+          setProducts(serverProds);
+        } else {
+          // Seed server with current products if empty
+          fetch('/api/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(products)
+          }).catch(err => console.error("Error seeding products to server:", err));
+        }
+      })
+      .catch((err) => console.error("Error fetching products:", err));
+
+    // 3. Coupons reconciliation
+    fetch('/api/coupons')
+      .then((res) => res.json())
+      .then((serverCoupons) => {
+        if (serverCoupons && Array.isArray(serverCoupons) && serverCoupons.length > 0) {
+          setCoupons(serverCoupons);
+        } else {
+          // Seed server with current coupons if empty
+          fetch('/api/coupons', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(coupons)
+          }).catch(err => console.error("Error seeding coupons to server:", err));
+        }
+      })
+      .catch((err) => console.error("Error fetching coupons:", err));
+  }, []);
+
+  // Sync state with localStorage and server
   useEffect(() => {
     localStorage.setItem('sl_products_list', JSON.stringify(products));
+    if (products && products.length > 0) {
+      fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(products)
+      }).catch(err => console.error("Error syncing products to server:", err));
+    }
   }, [products]);
 
   useEffect(() => {
     localStorage.setItem('sl_coupons_list', JSON.stringify(coupons));
+    if (coupons && coupons.length > 0) {
+      fetch('/api/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(coupons)
+      }).catch(err => console.error("Error syncing coupons to server:", err));
+    }
   }, [coupons]);
 
   useEffect(() => {
-    localStorage.setItem('sl_store_settings', JSON.stringify(storeSettings));
-    // Sync settings to server for real-time backend notifications (such as custom Telegram Bot)
+    const syncedSettings = { ...storeSettings };
+    if (syncedSettings.deliveryFee === undefined || syncedSettings.deliveryFee === 3) {
+      syncedSettings.deliveryFee = 2;
+    }
+    localStorage.setItem('sl_store_settings', JSON.stringify(syncedSettings));
+    // Sync settings to server for real-time backend notifications
     fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(storeSettings)
+      body: JSON.stringify(syncedSettings)
     }).catch(err => console.error("Server API offline; using local cache", err));
   }, [storeSettings]);
 
@@ -179,12 +264,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[#0b0424] text-white selection:bg-[#d946ef] selection:text-white font-sans transition-all duration-300 pb-20">
+    <div className="min-h-screen flex flex-col justify-between bg-[#f8fafc] text-slate-900 selection:bg-[#d946ef] selection:text-white font-sans transition-all duration-300 pb-20">
       
       {/* Background decorations */}
-      <div className="fixed inset-0 pointer-events-none select-none overflow-hidden z-0">
-        <div className="absolute top-[10%] left-[20%] w-[350px] h-[350px] bg-[#8b5cf6]/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[10%] right-[10%] w-[450px] h-[450px] bg-[#d946ef]/10 rounded-full blur-[140px]"></div>
+      <div className="fixed inset-0 pointer-events-none select-none overflow-hidden z-0 opacity-40">
+        <div className="absolute top-[10%] left-[20%] w-[350px] h-[350px] bg-indigo-200/25 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[10%] right-[10%] w-[450px] h-[450px] bg-pink-200/25 rounded-full blur-[140px]"></div>
       </div>
 
       <div className="relative z-10 w-full flex flex-col">

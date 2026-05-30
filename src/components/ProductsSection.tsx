@@ -18,7 +18,7 @@ export default function ProductsSection({
   products,
   onAddToCart,
   lang,
-  deliveryFee = 3,
+  deliveryFee = 2,
   activeCategory: externalActiveCategory,
   setActiveCategory: externalSetActiveCategory,
   searchQuery: externalSearchQuery,
@@ -152,11 +152,11 @@ export default function ProductsSection({
             return (
               <div 
                 key={p.id}
-                className="bg-[#12092e]/80 border border-[#8b5cf6]/15 rounded-xl p-2 sm:p-2.5 flex flex-col justify-between hover:border-[#d946ef]/60 backdrop-blur-xs transition-all duration-300 relative group overflow-hidden shadow-md hover:shadow-[#bfdbfe]/5"
+                className="bg-white border border-slate-200/85 rounded-2xl p-2 sm:p-2.5 flex flex-col justify-between hover:border-indigo-500 transition-all duration-300 relative group overflow-hidden shadow-xs hover:shadow-md"
               >
                 {/* Square Card Cover image with absolute badges */}
                 <div 
-                  className="aspect-square w-full bg-[#1b124a]/55 rounded-xl overflow-hidden relative cursor-pointer select-none"
+                  className="aspect-square w-full bg-slate-100 rounded-xl overflow-hidden relative cursor-pointer select-none"
                   onClick={() => setSelectedProduct(p)}
                 >
                   <img 
@@ -190,7 +190,7 @@ export default function ProductsSection({
                   </div>
 
                   {/* Category overlay label */}
-                  <span className={`absolute bottom-1.5 ${isAr ? 'left-1.5' : 'right-1.5'} bg-[#12092e]/85 border border-[#8b5cf6]/20 text-[8px] text-zinc-300 px-1.5 py-0.5 rounded-md`}>
+                  <span className={`absolute bottom-1.5 ${isAr ? 'left-1.5' : 'right-1.5'} bg-white/90 border border-slate-200/90 text-[8px] text-slate-700 px-1.5 py-0.5 rounded-md font-bold shadow-xs`}>
                     {getCategoryTitle(p.category)}
                   </span>
                 </div>
@@ -199,30 +199,30 @@ export default function ProductsSection({
                 <div className="pt-2 flex-1 flex flex-col justify-between space-y-2">
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="bg-[#cbd5e1]/10 border border-[#cbd5e1]/20 text-amber-300 text-[9px] font-black px-1.5 py-0.5 rounded-md">
+                      <span className="bg-slate-100 border border-slate-200 text-slate-600 text-[9px] font-black px-1.5 py-0.5 rounded-md">
                         {isAr ? 'كود: ' : 'SKU: '}#{p.code || '00'}
                       </span>
                     </div>
                     <h3 
                       onClick={() => setSelectedProduct(p)}
-                      className="font-black text-white text-[11px] sm:text-xs leading-tight cursor-pointer hover:text-[#d946ef] transition line-clamp-2 h-[28px] sm:h-[32px] overflow-hidden"
+                      className="font-black text-slate-800 text-[11px] sm:text-xs leading-tight cursor-pointer hover:text-indigo-650 transition line-clamp-2 h-[28px] sm:h-[32px] overflow-hidden"
                       title={title}
                     >
                       {title}
                     </h3>
-                    <p className="text-[10px] text-zinc-400 line-clamp-1 opacity-70 hidden sm:block">
+                    <p className="text-[10px] text-zinc-500 line-clamp-1 opacity-70 hidden sm:block">
                       {desc}
                     </p>
                   </div>
 
                   {/* Pricing and Cart add CTA (AliExpress Style compact tray) */}
-                  <div className="border-t border-[#8b5cf6]/10 pt-1.5 flex items-center justify-between gap-1">
+                  <div className="border-t border-slate-100 pt-1.5 flex items-center justify-between gap-1">
                     <div className="text-left font-mono">
-                      <span className="text-[8.5px] text-zinc-500 block leading-none">
+                      <span className="text-[8.5px] text-zinc-400 block leading-none">
                         {isAr ? 'السعر:' : 'Price:'}
                       </span>
-                      <span className="text-xs sm:text-[13.5px] font-black text-transparent bg-clip-text bg-gradient-to-r from-[#22c55e] to-[#a78bfa] leading-none block mt-0.5">
-                        {p.price.toFixed(3)} BHD
+                      <span className="text-xs sm:text-[13.5px] font-black text-emerald-600 leading-none block mt-0.5">
+                        {parseFloat(p.price.toFixed(3))} BHD
                       </span>
                     </div>
 
@@ -231,7 +231,7 @@ export default function ProductsSection({
                       className={`h-7 sm:h-8 px-2.5 sm:px-3 rounded-lg text-[9.5px] font-black cursor-pointer flex items-center gap-1 transition active:scale-95 ${
                         isAdded
                           ? 'bg-emerald-600 text-white'
-                          : 'bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] hover:from-[#d946ef] hover:to-[#8b5cf6] text-white shadow-sm'
+                          : 'bg-slate-900 hover:bg-slate-850 text-white shadow-xs'
                       }`}
                     >
                       {isAdded ? (
@@ -254,12 +254,12 @@ export default function ProductsSection({
           })}
         </div>
       ) : (
-        <div className="bg-[#12092e]/40 border-2 border-dashed border-[#8b5cf6]/10 rounded-2xl p-16 text-center text-zinc-400 space-y-3 max-w-sm mx-auto">
-          <div className="text-4xl text-[#8b5cf6]">🔍</div>
-          <h4 className="font-black text-white text-xs sm:text-sm">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-16 text-center text-slate-500 space-y-3 max-w-sm mx-auto shadow-xs">
+          <div className="text-4xl">🔍</div>
+          <h4 className="font-black text-slate-800 text-xs sm:text-sm">
             {isAr ? 'لا توجد معروضات متاحة' : 'No products found'}
           </h4>
-          <p className="text-[10px] text-zinc-500">
+          <p className="text-[10px] text-zinc-400">
             {isAr ? 'يرجى مراجعة التهجئة أو تحديد قسم آخر.' : 'Try specifying another department tab.'}
           </p>
         </div>
@@ -267,25 +267,25 @@ export default function ProductsSection({
 
       {/* AliExpress Detail & Combined Shipping Preview Modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-[999] flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#12092e] border border-[#8b5cf6]/40 text-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/55 backdrop-blur-xs z-[999] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-xl w-full overflow-hidden shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
             
             <button
               onClick={() => setSelectedProduct(null)}
-              className="absolute top-4 right-4 z-10 p-1.5 rounded-full bg-[#1b124a]/85 text-zinc-300 hover:text-white border border-[#8b5cf6]/30 transition cursor-pointer"
+              className="absolute top-4 right-4 z-10 p-1.5 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition cursor-pointer shadow-xs border border-slate-200/50"
             >
               <X size={16} />
             </button>
 
             {/* Main Picture header */}
-            <div className="h-56 sm:h-64 bg-slate-900 relative">
+            <div className="h-56 sm:h-64 bg-slate-100 relative">
               <img 
                 src={selectedProduct.image} 
                 alt="" 
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
               />
-              <span className="absolute bottom-4 right-4 bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] text-white text-[10px] font-black px-3 py-1 rounded-xl">
+              <span className="absolute bottom-4 right-4 bg-slate-900 text-white text-[10px] font-black px-3 py-1 rounded-xl">
                 {getCategoryTitle(selectedProduct.category)}
               </span>
 
@@ -304,26 +304,24 @@ export default function ProductsSection({
             <div className="p-6 space-y-5">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-black tracking-widest text-[#d946ef] uppercase">S&L ORIGINAL SERIES</span>
-                  <span className="bg-[#cbd5e1]/10 border border-[#cbd5e1]/20 text-amber-300 text-[10px] font-mono font-black px-2 py-0.5 rounded-md">
+                  <span className="text-[10px] font-black tracking-widest text-indigo-600 uppercase">S&L ORIGINAL SERIES</span>
+                  <span className="bg-slate-100 border border-slate-250/90 text-slate-700 text-[10px] font-mono font-black px-2 py-0.5 rounded-md">
                     {isAr ? 'كود: ' : 'SKU: '} #{selectedProduct.code || '00'}
                   </span>
                 </div>
-                <h3 className="font-black text-sm sm:text-base text-white">{isAr ? selectedProduct.title : (selectedProduct.titleEn || selectedProduct.title)}</h3>
-                <p className="text-xs text-zinc-300 leading-relaxed font-normal bg-[#1b124a]/40 p-3 rounded-2xl border border-[#8b5cf6]/15">
+                <h3 className="font-black text-sm sm:text-base text-slate-850">{isAr ? selectedProduct.title : (selectedProduct.titleEn || selectedProduct.title)}</h3>
+                <p className="text-xs text-slate-650 leading-relaxed font-normal bg-slate-50 p-3 rounded-2xl border border-slate-200/70">
                   {isAr ? selectedProduct.description : (selectedProduct.descriptionEn || selectedProduct.description)}
                 </p>
               </div>
 
-
-
               {/* IMPORTANT: Link Products segment requested by user */}
               {/* "وعندما يقوم العميل بطلب احدهم يظهر له المنتجات الباقيه والتوصيل يكون مره وحده بسعر واحد" */}
               {selectedProduct.deliveryGroupId && (
-                <div className="space-y-2.5 bg-[#1b124a]/20 p-3 rounded-2xl border border-[#8b5cf6]/10">
-                  <span className="text-[11px] font-black text-[#5df6be] flex items-center gap-1">
-                    <Sparkles size={11} className="text-[#5df6be] animate-bounce" />
-                    <span>{isAr ? '📦 منتجات من نفس المستودع (وفر التوصيل):' : '📦 Products from the same warehouse (Combine Shipping):'}</span>
+                <div className="space-y-2.5 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                  <span className="text-[11px] font-black text-indigo-700 flex items-center gap-1.5">
+                    <Sparkles size={12} className="text-indigo-500" />
+                    <span>{isAr ? '📦 منتجات ممتعة من نفس المستودع (شحن موحد):' : '📦 Products from the same warehouse (Unified Shipping):'}</span>
                   </span>
 
                   {getLinkedProducts(selectedProduct).length > 0 ? (
@@ -332,23 +330,23 @@ export default function ProductsSection({
                         {getLinkedProducts(selectedProduct).map(link => (
                           <div 
                             key={link.id}
-                            className="bg-[#1b124a]/80 border border-[#8b5cf6]/20 p-2 rounded-xl flex items-center justify-between gap-2 hover:border-[#d946ef]/60 transition duration-200"
+                            className="bg-white border border-slate-200 p-2 rounded-xl flex items-center justify-between gap-2 hover:border-slate-300 transition duration-200"
                           >
                             <div 
                               onClick={() => setSelectedProduct(link)}
                               className="min-w-0 flex items-center gap-2 cursor-pointer hover:opacity-95 flex-1"
                               title={isAr ? 'اضغط لعرض تفاصيل هذا المنتج 🔍' : 'Click to view details of this product 🔍'}
                             >
-                              <img src={link.image} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0 border border-[#8b5cf6]/15" />
+                              <img src={link.image} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0 border border-slate-150" />
                               <div className="min-w-0">
-                                <h4 className="text-[9.5px] font-extrabold text-white hover:text-[#d946ef] transition truncate leading-tight">{isAr ? link.title : (link.titleEn || link.title)}</h4>
-                                <p className="text-[9px] text-[#5df6be] font-mono font-bold leading-none mt-0.5">{link.price} BHD</p>
+                                <h4 className="text-[9.5px] font-extrabold text-slate-800 hover:text-indigo-650 transition truncate leading-tight">{isAr ? link.title : (link.titleEn || link.title)}</h4>
+                                <p className="text-[9.5px] text-emerald-600 font-mono font-bold leading-none mt-0.5">{parseFloat(link.price.toFixed(3))} BHD</p>
                               </div>
                             </div>
 
                             <button
                               onClick={() => handleAddToCartWithAnimation(link)}
-                              className="p-1 px-1.5 rounded-md bg-[#8b5cf6] text-white hover:bg-[#d946ef] text-[8px] sm:text-[9px] font-black cursor-pointer shrink-0"
+                              className="p-1 px-1.5 rounded-md bg-slate-100 border border-slate-200 text-slate-700 hover:bg-indigo-600 hover:text-white text-[8px] sm:text-[9.5px] font-black cursor-pointer shrink-0 transition"
                             >
                               + {isAr ? 'أضف' : 'Add'}
                             </button>
@@ -357,8 +355,8 @@ export default function ProductsSection({
                       </div>
 
                       {/* Prominent warning notice banner requested by user */}
-                      <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-[#d946ef]/15 via-[#8b5cf6]/15 to-[#0b0424] border border-[#d946ef]/30 text-center shadow-[0_0_12px_rgba(217,70,239,0.15)] animate-pulse">
-                        <p className="text-[10px] sm:text-[11px] font-black text-amber-300 leading-normal">
+                      <div className="mt-3 p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-center shadow-xs">
+                        <p className="text-[10px] sm:text-[11px] font-black text-amber-700 leading-normal">
                           {isAr 
                             ? '💡 أضف منتجات من نفس المستودع لتحصل عليها في شحنة واحدة وتوفر رسوم التوصيل الإضافية!'
                             : '💡 Add products from the same warehouse to get them in one shipment and save on extra delivery fees!'}
@@ -366,8 +364,8 @@ export default function ProductsSection({
                       </div>
                     </>
                   ) : (
-                    <p className="text-[10px] text-zinc-500">
-                      {isAr ? 'باقي السلع المربوطة بمستودع التجميع تم بيعها بالكامل.' : 'All other linked product group stocks sold out details.'}
+                    <p className="text-[10px] text-slate-500">
+                      {isAr ? 'باقي السلع المربوطة بمستودع التجميع تم بيعها بالكامل.' : 'All other linked product group stocks sold out.'}
                     </p>
                   )}
                 </div>
@@ -375,35 +373,35 @@ export default function ProductsSection({
 
               {/* Action pricing strip */}
               {!selectedProduct.deliveryGroupId && (
-                <div className="bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-2xl space-y-1">
-                  <div className="flex items-center gap-1.5 text-amber-300 font-black text-[11px]">
+                <div className="bg-amber-50/80 border border-amber-200 p-3.5 rounded-2xl space-y-1">
+                  <div className="flex items-center gap-1.5 text-amber-750 font-black text-[11px]">
                     <span>🚚</span>
                     <span>{isAr ? 'توصيل منفرد مستقر للسلعة:' : 'Independent Solo Shipping:'}</span>
                   </div>
-                  <p className="text-[10.5px] text-zinc-300 leading-normal">
+                  <p className="text-[10.5px] text-slate-700 leading-normal">
                     {isAr
-                      ? `سعر توصيل هذه السلعة بشكل مستقل ومنفرد هو ${deliveryFee.toFixed(3)} د.ب للطلب بالكامل، لأنها تُشحن من مستودع خاص ولا يمكن دمجها مع مواقع أخرى.`
-                      : `This item is shipped solo at ${deliveryFee.toFixed(3)} BHD per order due to being sourced from a separate supplier warehouse.`}
+                      ? `سعر توصيل هذه السلعة بشكل مستقل ومنفرد هو ${parseFloat(deliveryFee.toFixed(3))} د.ب للطلب بالكامل، لأنها تُشحن من مستودع خاص ولا يمكن دمجها مع مواقع أخرى.`
+                      : `This item is shipped solo at ${parseFloat(deliveryFee.toFixed(3))} BHD per order due to being sourced from a separate supplier warehouse.`}
                   </p>
                 </div>
               )}
 
-              <div className="border-t border-[#8b5cf6]/20 pt-4 flex items-center justify-between">
+              <div className="border-t border-slate-150 pt-4 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-zinc-400 block">{isAr ? 'السعر الفردي:' : 'Individual Price:'}</span>
-                  <span className="font-mono text-sm sm:text-base font-black text-[#5df6be]">{selectedProduct.price.toFixed(3)} BHD</span>
+                  <span className="text-[10px] text-slate-500 block">{isAr ? 'السعر الفردي:' : 'Individual Price:'}</span>
+                  <span className="font-mono text-sm sm:text-base font-black text-emerald-600">{parseFloat(selectedProduct.price.toFixed(3))} BHD</span>
                 </div>
 
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleAddToCartWithAnimation(selectedProduct)}
-                    className="bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] hover:from-[#d946ef] hover:to-[#8b5cf6] text-white font-black py-2.5 px-6 rounded-xl text-xs sm:text-sm cursor-pointer shadow-md"
+                    className="bg-slate-900 border border-slate-805 hover:bg-slate-850 text-white font-black py-2.5 px-6 rounded-xl text-xs sm:text-sm cursor-pointer shadow-xs transition"
                   >
                     {isAddedTip === selectedProduct.id ? (isAr ? 'مضاف في السلة ✓' : 'Added to Cart ✓') : (isAr ? 'إضافة إلى سلّة الطلب' : 'Add to Shopping Cart')}
                   </button>
                   <button
                     onClick={() => setSelectedProduct(null)}
-                    className="bg-[#1b124a] text-zinc-300 px-4 rounded-xl text-xs hover:text-white"
+                    className="bg-slate-100 text-slate-700 px-4 rounded-xl text-xs hover:text-slate-900 hover:bg-slate-200 transition border border-slate-200/50"
                   >
                     {isAr ? 'إغلاق' : 'Close'}
                   </button>

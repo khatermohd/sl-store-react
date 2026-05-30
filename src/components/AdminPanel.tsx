@@ -2424,7 +2424,7 @@ export default function AdminPanel({
                           </div>
                           <div className="flex justify-between items-baseline text-[10.5px]">
                             <span className="text-zinc-400">{isAr ? 'مجموع القيمة:' : 'Total amount:'}</span>
-                            <span className="font-mono text-[11px] font-black text-amber-300">{stat.totalRevenue.toFixed(3)} {isAr ? 'د.ب' : 'BHD'}</span>
+                            <span className="font-mono text-[11px] font-black text-amber-300">{parseFloat(stat.totalRevenue.toFixed(3))} {isAr ? 'د.ب' : 'BHD'}</span>
                           </div>
                         </div>
                       </div>
@@ -2545,7 +2545,7 @@ export default function AdminPanel({
                           {ord.items.map((item: any, i: number) => (
                             <div key={item.productId || i} className="p-3 text-xs text-zinc-100 flex flex-col gap-1.5">
                               <div className="flex justify-between font-extrabold text-[#bfdbfe] flex-wrap gap-1">
-                                <span className="font-mono text-[#5df6be]">{item.quantity} × {item.price.toFixed(3)} د.ب</span>
+                                <span className="font-mono text-[#5df6be]">{item.quantity} × {parseFloat(item.price.toFixed(3))} د.ب</span>
                                 <span>{i + 1}. {isAr ? item.titleAr : item.titleEn}</span>
                               </div>
                               
@@ -2674,9 +2674,9 @@ export default function AdminPanel({
                       {/* Subtotals card */}
                       <div className="bg-[#12092e]/90 p-3.5 rounded-xl border border-[#cbd5e1]/10 flex flex-wrap justify-between items-center text-xs gap-2">
                         <div className="flex items-center gap-4 text-[11px] text-zinc-400">
-                          <span>{isAr ? 'مجموع المنتجات:' : 'Basket Subtotal:'} <span className="font-mono font-extrabold text-white">{ord.itemsTotal.toFixed(3)} د.ب</span></span>
+                          <span>{isAr ? 'مجموع المنتجات:' : 'Basket Subtotal:'} <span className="font-mono font-extrabold text-white">{parseFloat(ord.itemsTotal.toFixed(3))} د.ب</span></span>
                           {ord.deliveryMethod === 'delivery' && (
-                            <span>{isAr ? 'رسوم التوصيل المدمج:' : 'Consolidated Shipping:'} <span className="font-mono font-extrabold text-white">{ord.shippingFee.toFixed(3)} د.ب</span></span>
+                            <span>{isAr ? 'رسوم التوصيل المدمج:' : 'Consolidated Shipping:'} <span className="font-mono font-extrabold text-white">{parseFloat(ord.shippingFee.toFixed(3))} د.ب</span></span>
                           )}
                         </div>
                         <div className="text-right">
@@ -2684,7 +2684,7 @@ export default function AdminPanel({
                             {isAr ? 'الحساب الإجمالي المستحق:' : 'Grand Total Due:'}
                           </span>
                           <span className="font-mono font-black text-amber-300 text-sm sm:text-base pr-2 select-all tracking-wide">
-                            {ord.grandTotal.toFixed(3)} {isAr ? 'د.ب' : 'BHD'}
+                            {parseFloat(ord.grandTotal.toFixed(3))} {isAr ? 'د.ب' : 'BHD'}
                           </span>
                         </div>
                       </div>

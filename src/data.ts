@@ -258,7 +258,7 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
     adsenseSlot: '8033541109',
     showOverlayText: true
   },
-  deliveryFee: 3,
+  deliveryFee: 2,
   googleSpreadsheetId: "",
   googleSpreadsheetUrl: "",
   googleFormId: "",

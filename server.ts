@@ -15,6 +15,8 @@ async function startServer() {
   const DATA_DIR = path.join(process.cwd(), "data");
   const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
   const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
+  const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
+  const COUPONS_FILE = path.join(DATA_DIR, "coupons.json");
 
   // Ensure dynamic data folder exists
   if (!fs.existsSync(DATA_DIR)) {
@@ -64,6 +66,52 @@ async function startServer() {
       fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), "utf-8");
     } catch (e) {
       console.error("Error writing settings database:", e);
+    }
+  };
+
+  // Helper to safely load products
+  const loadProducts = (): any[] => {
+    if (!fs.existsSync(PRODUCTS_FILE)) {
+      return [];
+    }
+    try {
+      const raw = fs.readFileSync(PRODUCTS_FILE, "utf-8");
+      return JSON.parse(raw);
+    } catch (e) {
+      console.error("Error reading products database:", e);
+      return [];
+    }
+  };
+
+  // Helper to safely write products
+  const saveProducts = (products: any[]) => {
+    try {
+      fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2), "utf-8");
+    } catch (e) {
+      console.error("Error writing products database:", e);
+    }
+  };
+
+  // Helper to safely load coupons
+  const loadCoupons = (): any[] => {
+    if (!fs.existsSync(COUPONS_FILE)) {
+      return [];
+    }
+    try {
+      const raw = fs.readFileSync(COUPONS_FILE, "utf-8");
+      return JSON.parse(raw);
+    } catch (e) {
+      console.error("Error reading coupons database:", e);
+      return [];
+    }
+  };
+
+  // Helper to safely write coupons
+  const saveCoupons = (coupons: any[]) => {
+    try {
+      fs.writeFileSync(COUPONS_FILE, JSON.stringify(coupons, null, 2), "utf-8");
+    } catch (e) {
+      console.error("Error writing coupons database:", e);
     }
   };
 
@@ -252,6 +300,40 @@ ${listItems}
     saveSettings(newSettings);
     console.log("Successfully cached store settings on the server side.");
     res.json({ success: true, settings: newSettings });
+  });
+
+  // API: Get products list
+  app.get("/api/products", (req, res) => {
+    const products = loadProducts();
+    res.json(products);
+  });
+
+  // API: Update products list
+  app.post("/api/products", (req, res) => {
+    const products = req.body;
+    if (!products || !Array.isArray(products)) {
+      return res.status(400).json({ error: "Invalid products array" });
+    }
+    saveProducts(products);
+    console.log("Successfully cached products list on the server side.");
+    res.json({ success: true, count: products.length });
+  });
+
+  // API: Get coupons list
+  app.get("/api/coupons", (req, res) => {
+    const coupons = loadCoupons();
+    res.json(coupons);
+  });
+
+  // API: Update coupons list
+  app.post("/api/coupons", (req, res) => {
+    const coupons = req.body;
+    if (!coupons || !Array.isArray(coupons)) {
+      return res.status(400).json({ error: "Invalid coupons array" });
+    }
+    saveCoupons(coupons);
+    console.log("Successfully cached coupons list on the server side.");
+    res.json({ success: true, count: coupons.length });
   });
 
   // API: Dynamic Telegram notification forwarder (Supporting direct custom Telegram Bot + CallMeBot fallback)

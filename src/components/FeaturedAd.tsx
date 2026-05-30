@@ -17,7 +17,7 @@ export default function FeaturedAd({ ad, lang }: FeaturedAdProps) {
   if (ad.adType === 'adsense') {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-4">
-        <div className="relative bg-[#160e3d]/90 border border-[#8b5cf6]/40 p-3 rounded-2xl overflow-hidden shadow-lg min-h-[90px] flex flex-col justify-center items-center text-center">
+        <div className="relative bg-white border border-slate-200 p-3 rounded-2xl overflow-hidden shadow-xs min-h-[90px] flex flex-col justify-center items-center text-center">
           {/* AdSense Live Layout Injected */}
           <div className="absolute inset-0 w-full h-full opacity-90 z-10 flex items-center justify-center">
             <ins className="adsbygoogle"
@@ -29,12 +29,12 @@ export default function FeaturedAd({ ad, lang }: FeaturedAdProps) {
           </div>
 
           {/* Underlay Placeholder */}
-          <div className="relative z-0 pointer-events-none text-neutral-400 space-y-0.5 select-none font-medium">
-            <span className="inline-flex items-center gap-1 bg-[#8b5cf6]/20 text-[#a78bfa] text-[9px] px-2 py-0.5 rounded-full font-black animate-pulse">
+          <div className="relative z-0 pointer-events-none text-slate-400 space-y-0.5 select-none font-medium">
+            <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 text-[9px] px-2 py-0.5 rounded-full font-black animate-pulse">
               <Sparkles size={8} />
               <span>{isAr ? 'إعلان ممول بواسطة Google AdSense' : 'Sponsored by Google AdSense'} ⚡</span>
             </span>
-            <p className="text-[10px] text-zinc-500">
+            <p className="text-[10px] text-slate-500">
               {isAr ? 'يتم تغذية الإعلانات بناءً على اهتماماتك' : 'Ads served based on relevant topics'}
             </p>
           </div>
@@ -54,7 +54,15 @@ export default function FeaturedAd({ ad, lang }: FeaturedAdProps) {
   );
 
   const adContent = (
-    <div className="relative w-full overflow-hidden border border-[#8b5cf6]/35 rounded-2xl shadow-xl hover:shadow-[#d946ef]/10 hover:border-[#d946ef]/45 transition-all duration-300 bg-[#12092e]">
+    <div className="relative w-full overflow-hidden border border-slate-200/90 rounded-2xl shadow-xs hover:shadow-md transition-all duration-300 bg-slate-950 h-[155px] sm:h-[240px] md:h-[300px] flex items-center justify-center">
+      {/* Premium blurred backdrop for cinematic cohesion and edge-filling */}
+      {ad.imageUrl && !isVideo && (
+        <div 
+          className="absolute inset-0 bg-cover bg-center blur-2xl opacity-35 scale-105 pointer-events-none"
+          style={{ backgroundImage: `url(${ad.imageUrl})` }}
+        />
+      )}
+      
       {isVideo ? (
         <video 
           key={ad.imageUrl}
@@ -63,38 +71,38 @@ export default function FeaturedAd({ ad, lang }: FeaturedAdProps) {
           loop 
           muted 
           playsInline
-          className="w-full h-auto aspect-[16/6] md:aspect-[21/6] object-cover block"
+          className="relative z-10 w-full h-full object-contain block"
         />
       ) : ad.imageUrl ? (
         <img 
           src={ad.imageUrl} 
           alt={isAr ? ad.titleAr : ad.titleEn} 
           referrerPolicy="no-referrer"
-          className="w-full h-auto aspect-[16/6] md:aspect-[21/6] object-cover block"
+          className="relative z-10 w-full h-full object-contain block"
         />
       ) : (
-        <div className="w-full aspect-[16/6] md:aspect-[21/6] bg-gradient-to-r from-[#1b124a] to-[#0d0526] flex items-center justify-center">
-          <span className="text-[#a78bfa] text-xs font-bold">
+        <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+          <span className="text-slate-400 text-xs font-bold">
             {isAr ? 'مساحة إعلانية' : 'AD SPACE'}
           </span>
         </div>
       )}
 
-      {/* Styled written text promo below the image/video to keep the banner 100% visible and clear */}
+      {/* Styled written text promo in front of the ad, absolute at the bottom, bg-transparent so it never obscures the video/image */}
       {ad.showOverlayText !== false && (ad.titleAr || ad.titleEn || ad.descriptionAr || ad.descriptionEn) && (
-        <div className="p-3 sm:p-4 bg-[#0d0526] text-white flex flex-col justify-end border-t border-[#8b5cf6]/30 transition-all">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="inline-flex items-center justify-center bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+        <div className="absolute bottom-1 inset-x-0 bg-transparent px-4 py-2 text-white flex flex-col justify-end transition-all z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">
+          <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+            <span className="inline-flex items-center justify-center bg-[#da291c] text-white text-[9.5px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm">
               ⚡ {isAr ? 'عرض مميز' : 'SPECIAL PROMO'}
             </span>
             {(isAr ? ad.titleAr : ad.titleEn) && (
-              <h4 className="text-xs sm:text-sm font-black text-white">
+              <h4 className="text-xs sm:text-sm font-black text-white hover:scale-[1.01] transition-transform" style={{ textShadow: "1px 1px 3px rgba(0,0,0,0.95), -1px -1px 3px rgba(0,0,0,0.95), 1px -1px 3px rgba(0,0,0,0.95), -1px 1px 3px rgba(0,0,0,0.95)" }}>
                 {isAr ? ad.titleAr : ad.titleEn}
               </h4>
             )}
           </div>
           {(isAr ? ad.descriptionAr : ad.descriptionEn) && (
-            <p className="text-[10.5px] sm:text-xs text-zinc-350 leading-relaxed font-semibold">
+            <p className="text-[10px] sm:text-[11px] text-slate-100 leading-relaxed font-bold tracking-wide" style={{ textShadow: "1px 1px 3px rgba(0,0,0,0.95), -1px -1px 3px rgba(0,0,0,0.95), 1px -1px 3px rgba(0,0,0,0.95), -1px 1px 3px rgba(0,0,0,0.95)" }}>
               {isAr ? ad.descriptionAr : ad.descriptionEn}
             </p>
           )}

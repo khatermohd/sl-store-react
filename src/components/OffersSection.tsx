@@ -45,12 +45,12 @@ export default function OffersSection({ lang, coupons }: OffersSectionProps) {
     <div className={`space-y-6 ${isAr ? 'text-right' : 'text-left'}`} dir={isAr ? 'rtl' : 'ltr'}>
       
       {/* Search Header */}
-      <div className="bg-[#12092e]/60 border border-[#8b5cf6]/20 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
         <div className="space-y-1">
-          <h2 className="text-base sm:text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-[#d946ef] to-[#bfdbfe]">
-            {isAr ? 'كوبونات خصم حصرية لشركائنا 🎟️' : 'Partner Discount Coupons 🎟️'}
+          <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-1.5">
+            <span>كوبونات خصم حصرية لشركائنا 🎟️</span>
           </h2>
-          <p className="text-[11px] text-zinc-300">
+          <p className="text-[11px] text-slate-500">
             {isAr 
               ? 'احصل على أكواد خصم حصرية وموثقة من قبلنا للاستفادة منها عند الشراء مباشرة من المحلات والمطاعم المذكورة.' 
               : 'Unlock exclusive codes verified by S&L to use directly at partnered local businesses.'}
@@ -59,7 +59,7 @@ export default function OffersSection({ lang, coupons }: OffersSectionProps) {
 
         {/* Search input */}
         <div className="relative max-w-xs w-full">
-          <span className={`absolute ${isAr ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-zinc-400`}>
+          <span className={`absolute ${isAr ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-slate-400`}>
             <Search size={15} />
           </span>
           <input
@@ -67,7 +67,7 @@ export default function OffersSection({ lang, coupons }: OffersSectionProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={isAr ? 'ابحث عن كود، مطعم، أو عيادة...' : 'Search coupon, store, café...'}
-            className={`w-full text-xs sm:text-sm ${isAr ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'} py-2.5 bg-[#160e3d]/80 text-white rounded-xl border border-[#8b5cf6]/30 outline-none focus:border-[#d946ef] transition`}
+            className={`w-full text-xs sm:text-sm ${isAr ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'} py-2.5 bg-slate-50 text-slate-900 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 transition placeholder-slate-400`}
           />
         </div>
       </div>
@@ -78,10 +78,10 @@ export default function OffersSection({ lang, coupons }: OffersSectionProps) {
           <button
             key={cat.id}
             onClick={() => setActiveCategory(cat.id as any)}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition whitespace-nowrap cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-black transition whitespace-nowrap cursor-pointer border ${
               activeCategory === cat.id
-                ? 'bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] text-white shadow-md'
-                : 'bg-[#1b124a]/50 text-zinc-400 hover:text-white border border-[#8b5cf6]/20'
+                ? 'bg-slate-900 text-white border-transparent shadow-xs'
+                : 'bg-slate-50 text-slate-600 hover:text-slate-800 border-slate-200 hover:bg-slate-100'
             }`}
           >
             {isAr ? cat.titleAr : cat.titleEn}
@@ -98,46 +98,46 @@ export default function OffersSection({ lang, coupons }: OffersSectionProps) {
             return (
               <div 
                 key={c.id}
-                className="bg-[#12092e] border border-[#8b5cf6]/30 rounded-2xl p-4 flex flex-col justify-between space-y-4 hover:border-[#d946ef]/60 transition-all duration-300 relative overflow-hidden group shadow-md"
+                className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between space-y-4 hover:border-indigo-500 transition-all duration-300 relative overflow-hidden group shadow-xs"
               >
-                {/* Decorative cut-outs representing a ticket coupon */}
-                <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#0b0424]"></div>
-                <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#0b0424]"></div>
+                {/* Decorative cut-outs representing a ticket coupon on light bg */}
+                <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#f8fafc] border-r border-slate-200/50"></div>
+                <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#f8fafc] border-l border-slate-200/50"></div>
 
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2.5">
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-[#d946ef] bg-[#d946ef]/10 border border-[#d946ef]/30 px-2 py-0.5 rounded-md">
+                    <span className="text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-250/90 px-2 py-0.5 rounded-md inline-block">
                       {isAr ? 'قيمة الخصم:' : 'Discount Value:'} {c.discount}
                     </span>
-                    <h3 className="font-black text-xs sm:text-[13.5px] text-white pt-2 leading-relaxed">
+                    <h3 className="font-black text-xs sm:text-[13.5px] text-slate-850 pt-2 leading-relaxed">
                       {isAr ? c.titleAr : c.titleEn}
                     </h3>
-                    <p className="text-[10.5px] text-zinc-400 leading-relaxed">
+                    <p className="text-[10.5px] text-slate-500 leading-relaxed">
                       {isAr ? c.descriptionAr : c.descriptionEn}
                     </p>
                   </div>
-                  <div className="bg-[#1b124a]/85 p-2 rounded-xl border border-[#8b5cf6]/40 text-lg shrink-0">
+                  <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 text-lg shrink-0">
                     {c.category === 'food' ? '🥗' : c.category === 'health' ? '🦷' : '👜'}
                   </div>
                 </div>
 
                 {/* Ticket code copy segment */}
-                <div className="border-t border-dashed border-[#8b5cf6]/30 pt-3 flex items-center justify-between gap-3">
+                <div className="border-t border-dashed border-slate-200 pt-3 flex items-center justify-between gap-3">
                   <div className="min-w-0 text-left">
-                    <span className="text-[8px] text-zinc-500 block uppercase tracking-wider font-mono">
+                    <span className="text-[8px] text-slate-400 block uppercase tracking-wider font-mono">
                       {isAr ? 'رمز الكود البرمجي:' : 'COUPON CODE:'}
                     </span>
-                    <span className="font-mono text-xs sm:text-[13px] font-black text-[#5df6be] block tracking-wide select-all">
+                    <span className="font-mono text-xs sm:text-[13px] font-black text-emerald-700 block tracking-wide select-all">
                       {c.code}
                     </span>
                   </div>
 
                   <button
                     onClick={() => handleCopy(c.code)}
-                    className={`px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-black flex items-center gap-1.5 transition-all outline-none cursor-pointer ${
+                    className={`px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-black flex items-center gap-1.5 transition-all outline-none cursor-pointer border ${
                       hasCopied
-                        ? 'bg-[#10b981] text-white shadow-md shadow-emerald-500/10'
-                        : 'bg-[#1b124a] hover:bg-[#8b5cf6] text-[#e879f9] hover:text-white border border-[#8b5cf6]/50'
+                        ? 'bg-emerald-600 border-transparent text-white shadow-xs'
+                        : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                     }`}
                   >
                     {hasCopied ? (
@@ -158,12 +158,12 @@ export default function OffersSection({ lang, coupons }: OffersSectionProps) {
           })}
         </div>
       ) : (
-        <div className="bg-[#12092e]/40 border-2 border-dashed border-[#8b5cf6]/20 rounded-2xl p-12 text-center text-zinc-400 space-y-3 max-w-sm mx-auto">
+        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500 space-y-3 max-w-sm mx-auto shadow-xs">
           <div className="text-3xl">🎫</div>
-          <h4 className="font-black text-white text-xs sm:text-sm">
+          <h4 className="font-black text-slate-800 text-xs sm:text-sm">
             {isAr ? 'لا توجد خصومات متوفرة حالياً' : 'No discount codes found'}
           </h4>
-          <p className="text-[10px] text-zinc-500">
+          <p className="text-[10px] text-zinc-400">
             {isAr ? 'يرجى مراجعة تصنيف آخر أو تصفية البحث.' : 'Try changing your category filters.'}
           </p>
         </div>

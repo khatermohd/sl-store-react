@@ -161,7 +161,7 @@ export default function CartSidebar({
     }
   });
 
-  const baseFee = storeSettings.deliveryFee || 3;
+  const baseFee = storeSettings.deliveryFee !== undefined ? storeSettings.deliveryFee : 2;
   
   let unlinkedBatchCount = 0;
   cartItems.forEach(item => {
@@ -237,13 +237,13 @@ export default function CartSidebar({
 
     custMsg += `\n━━━━━━━━━━━━━━━━━━━━━\n`;
     custMsg += `💰 *السعر والملخص المالي:*\n`;
-    custMsg += `  • السعر الإجمالي للمنتجات: ${itemsTotal.toFixed(3)} د.ب\n`;
+    custMsg += `  • السعر الإجمالي للمنتجات: ${parseFloat(itemsTotal.toFixed(3))} د.ب\n`;
     if (deliveryMethod === 'delivery') {
-      custMsg += `  • رسوم التوصيل: ${calculatedShipping.toFixed(3)} د.ب\n`;
+      custMsg += `  • رسوم التوصيل: ${parseFloat(calculatedShipping.toFixed(3))} د.ب\n`;
     } else {
       custMsg += `  • التوصيل: بدون توصيل (استلام مجاني من المحل) 🏪\n`;
     }
-    custMsg += `  • *المجموع الإجمالي النهائي: ${grandTotal.toFixed(3)} د.ب*\n\n`;
+    custMsg += `  • *المجموع الإجمالي النهائي: ${parseFloat(grandTotal.toFixed(3))} د.ب*\n\n`;
     
     if (deliveryMethod === 'pickup') {
       custMsg += `📍 *تعليمات استلام طلبك من المحل:* \n${isAr ? storeSettings.socials.pickupInstructionsAr : storeSettings.socials.pickupInstructionsEn}\n\n`;
@@ -561,7 +561,7 @@ export default function CartSidebar({
                     <div className="space-y-1.5 text-right">
                       {ord.items.map((it, idx) => (
                         <div key={idx} className="flex justify-between text-[10.5px] font-medium border-b border-[#cbd5e1]/5 pb-1">
-                          <span className="font-mono text-zinc-400">{it.quantity} × {it.price.toFixed(3)} د.ب</span>
+                          <span className="font-mono text-zinc-400">{it.quantity} × {parseFloat(it.price.toFixed(3))} د.ب</span>
                           <span className="text-zinc-200">{isAr ? it.titleAr : it.titleEn}</span>
                         </div>
                       ))}
@@ -571,7 +571,7 @@ export default function CartSidebar({
                     <div className="bg-[#160e3d]/80 p-2.5 rounded-xl text-[10px] flex justify-between items-center text-zinc-400 border border-[#8b5cf6]/10 text-right">
                       <div className="text-left font-mono">
                         {isAr ? 'المجموع النهائي:' : 'Total due:'} 
-                        <span className="font-black text-amber-300 text-xs pr-1 font-mono">{ord.grandTotal.toFixed(3)} د.ب</span>
+                        <span className="font-black text-amber-300 text-xs pr-1 font-mono">{parseFloat(ord.grandTotal.toFixed(3))} د.ب</span>
                       </div>
                       <div>
                         {isAr ? 'الاستلام:' : 'Method:'} 
@@ -777,7 +777,7 @@ export default function CartSidebar({
                     }))).map((item, idx) => (
                       <div key={idx} className="flex justify-between items-center text-[10px] leading-tight">
                         <div className="text-left font-mono text-zinc-350">
-                          <span>{item.quantity} × {item.price.toFixed(3)}</span>
+                          <span>{item.quantity} × {parseFloat(item.price.toFixed(3))}</span>
                           <span className="text-[9px] mr-0.5">د.ب</span>
                         </div>
                         <span className="text-zinc-100 truncate max-w-[190px] font-medium text-right">
@@ -792,15 +792,15 @@ export default function CartSidebar({
                 <div className="space-y-1 text-[11px] text-zinc-300">
                   <div className="flex justify-between font-medium">
                     <span className="text-zinc-450">{isAr ? 'إجمالي قيمة المنتجات:' : 'Subtotal:'}</span>
-                    <span className="font-mono">{completedOrder ? completedOrder.itemsTotal.toFixed(3) : itemsTotal.toFixed(3)} د.ب</span>
+                    <span className="font-mono">{parseFloat((completedOrder ? completedOrder.itemsTotal : itemsTotal).toFixed(3))} د.ب</span>
                   </div>
                   
                   <div className="flex justify-between font-medium">
                     <span className="text-zinc-450">{isAr ? 'تكاليف التوصيل المضافة:' : 'Delivery Fee:'}</span>
                     <span className="font-mono">
                       {completedOrder 
-                        ? (completedOrder.shippingFee === 0 ? (isAr ? 'استلام مجاني' : '0.000 د.ب') : `${completedOrder.shippingFee.toFixed(3)} د.ب`)
-                        : (calculatedShipping === 0 ? (isAr ? 'استلام مجاني' : '0.000 د.ب') : `${calculatedShipping.toFixed(3)} د.ب`)
+                        ? (completedOrder.shippingFee === 0 ? (isAr ? 'استلام مجاني' : '0 د.ب') : `${parseFloat(completedOrder.shippingFee.toFixed(3))} د.ب`)
+                        : (calculatedShipping === 0 ? (isAr ? 'استلام مجاني' : '0 د.ب') : `${parseFloat(calculatedShipping.toFixed(3))} د.ب`)
                       }
                     </span>
                   </div>
@@ -808,7 +808,7 @@ export default function CartSidebar({
                   <div className="flex justify-between text-xs font-black text-white pt-2 border-t border-[#cbd5e1]/10">
                     <span className="text-[#bfdbfe]/90">{isAr ? 'المجموع المستحق الكلي:' : 'Total Amount:'}</span>
                     <span className="font-mono text-amber-300 text-[13px] tracking-wide">
-                      {completedOrder ? completedOrder.grandTotal.toFixed(3) : grandTotal.toFixed(3)} د.ب
+                      {parseFloat((completedOrder ? completedOrder.grandTotal : grandTotal).toFixed(3))} د.ب
                     </span>
                   </div>
                 </div>
@@ -896,7 +896,7 @@ export default function CartSidebar({
                     <div className="flex-1 min-w-0 text-right">
                       <h4 className="text-xs font-black text-white truncate">{title}</h4>
                       <p className="text-[10px] text-zinc-450 font-mono mt-0.5">
-                        {item.product.price.toFixed(3)} BHD {isAr ? 'د.ب' : 'BHD'}
+                        {parseFloat(item.product.price.toFixed(3))} BHD {isAr ? 'د.ب' : 'BHD'}
                       </p>
                       
                       {/* Bundle info tag */}
@@ -984,7 +984,7 @@ export default function CartSidebar({
                 </div>
 
                 <div className="flex justify-between items-center text-zinc-300 pt-1">
-                  <span className="font-mono font-black">{itemsTotal.toFixed(3)} BHD</span>
+                  <span className="font-mono font-black">{parseFloat(itemsTotal.toFixed(3))} BHD</span>
                   <span>{isAr ? 'مجموع المنتجات:' : 'Items Total:'}</span>
                 </div>
 
@@ -992,14 +992,14 @@ export default function CartSidebar({
                   {deliveryMethod === 'pickup' ? (
                     <>
                       <span className="text-[#bfdbfe] font-black font-sans bg-[#8b5cf6]/10 px-2 py-0.5 rounded border border-[#8b5cf6]/20">
-                        {isAr ? 'استلام من المحل (د.ب 0)' : 'Store Pickup (0.000 BHD)'}
+                        {isAr ? 'استلام من المحل (د.ب 0)' : 'Store Pickup (0 BHD)'}
                       </span>
                       <span>{isAr ? 'طريقة الاستلام:' : 'Collection Mode:'}</span>
                     </>
                   ) : (
                     <>
                       <div className="text-left font-mono font-black text-amber-400">
-                        {calculatedShipping.toFixed(3)} BHD 
+                        {parseFloat(calculatedShipping.toFixed(3))} BHD 
                         <span className="text-[8.5px] block font-sans font-bold text-zinc-500 text-left leading-tight">
                           {isAr ? '*(توصيل تجميعي مفعّل)' : '*(consolidated)'}
                         </span>
@@ -1011,7 +1011,7 @@ export default function CartSidebar({
 
                 <div className="flex justify-between items-center text-white font-black text-sm border-t border-[#8b5cf6]/25 pt-2">
                   <span className="font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-[#5df6be] to-[#bfdbfe]">
-                    {grandTotal.toFixed(3)} BHD
+                    {parseFloat(grandTotal.toFixed(3))} BHD
                   </span>
                   <span>{isAr ? 'المجموع النهائي المستحق:' : 'Grand Total:'}</span>
                 </div>

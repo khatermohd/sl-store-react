@@ -44,24 +44,24 @@ export default function SearchModal({
   };
 
   return (
-    <div id="search-modal-overlay" className="fixed inset-0 bg-neutral-950/85 backdrop-blur-md z-[100] flex items-start justify-center p-4 pt-16 sm:pt-24 animate-in fade-in duration-200" dir={isAr ? 'rtl' : 'ltr'}>
-      <div className="bg-[#12092e] border border-[#8b5cf6]/40 p-4 sm:p-6 rounded-3xl w-full max-w-xl shadow-2xl relative animate-in slide-in-from-top-6 duration-300">
+    <div id="search-modal-overlay" className="fixed inset-0 bg-black/55 backdrop-blur-xs z-[100] flex items-start justify-center p-4 pt-16 sm:pt-24 animate-in fade-in duration-200" dir={isAr ? 'rtl' : 'ltr'}>
+      <div className="bg-white border border-slate-200 p-4 sm:p-6 rounded-3xl w-full max-w-xl shadow-xl relative animate-in slide-in-from-top-6 duration-300">
         
         {/* Close trigger */}
         <button
           onClick={onClose}
-          className={`absolute top-4 ${isAr ? 'left-4' : 'right-4'} p-1.5 rounded-full bg-neutral-900 border border-white/10 text-zinc-400 hover:text-white transition cursor-pointer`}
+          className={`absolute top-4 ${isAr ? 'left-4' : 'right-4'} p-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition cursor-pointer`}
         >
           <X size={15} />
         </button>
 
-        <h3 className="text-sm sm:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-[#d946ef] mb-3">
+        <h3 className="text-sm sm:text-base font-black text-slate-900 mb-3">
           {isAr ? 'ابحث في متجر S&L المتميز 🔍' : 'Search S&L Premium Store 🔍'}
         </h3>
 
         {/* Input box */}
         <div className="relative w-full mt-1">
-          <span className={`absolute ${isAr ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-zinc-400`}>
+          <span className={`absolute ${isAr ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-slate-400`}>
             <Search size={16} />
           </span>
           <input
@@ -69,7 +69,7 @@ export default function SearchModal({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={isAr ? 'أدخل اسم العطر، الملابس، أو إكسسوارات السيارات...' : 'Enter perfume, clothing, or car accessories...'}
-            className={`w-full text-xs sm:text-sm ${isAr ? 'pr-11 pl-4 text-right' : 'pl-11 pr-4 text-left'} py-3.5 bg-neutral-900 text-white font-bold rounded-2xl border border-[#8b5cf6]/35 outline-none focus:border-[#d946ef] focus:ring-1 focus:ring-[#d946ef] transition shadow-md placeholder-zinc-500`}
+            className={`w-full text-xs sm:text-sm ${isAr ? 'pr-11 pl-4 text-right' : 'pl-11 pr-4 text-left'} py-3.5 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-sm placeholder-slate-400`}
             autoFocus
           />
         </div>
@@ -77,7 +77,7 @@ export default function SearchModal({
         {/* Result summary */}
         <div className="mt-4 max-h-[350px] overflow-y-auto space-y-2 scrollbar-none">
           {searchQuery.trim() === '' ? (
-            <p className="text-[10px] text-zinc-500 text-center py-6">
+            <p className="text-[10px] text-slate-400 text-center py-6">
               {isAr ? 'ابدأ بكتابة الأحرف لتصفح النتائج فوراً...' : 'Start typing to search products in real-time...'}
             </p>
           ) : results.length > 0 ? (
@@ -87,24 +87,24 @@ export default function SearchModal({
               return (
                 <div 
                   key={p.id}
-                  className="p-2.5 bg-neutral-900/60 border border-white/5 hover:border-[#8b5cf6]/30 rounded-xl flex items-center justify-between gap-3 transition"
+                  className="p-2.5 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl flex items-center justify-between gap-3 transition"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <img 
                       src={p.image} 
                       alt="" 
-                      className="w-10 h-10 rounded-lg object-cover bg-neutral-800 border border-white/5 shrink-0" 
+                      className="w-10 h-10 rounded-lg object-cover bg-slate-100 border border-slate-200/50 shrink-0" 
                     />
                     <div className="min-w-0">
-                      <h4 className="text-[11px] font-extrabold text-white truncate">{title}</h4>
-                      <p className="text-[11px] text-[#22c55e] font-mono font-bold mt-0.5">{p.price.toFixed(3)} BHD</p>
+                      <h4 className="text-[11px] font-extrabold text-slate-800 truncate">{title}</h4>
+                      <p className="text-[11px] text-emerald-600 font-mono font-bold mt-0.5">{parseFloat(p.price.toFixed(3))} BHD</p>
                     </div>
                   </div>
 
                   <button
                     onClick={() => handleAdd(p)}
                     className={`p-1.5 px-3 rounded-lg text-[9.5px] font-black cursor-pointer flex items-center gap-1 transition ${
-                      isAdded ? 'bg-emerald-600 text-white' : 'bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] text-white'
+                      isAdded ? 'bg-emerald-600 text-white' : 'bg-slate-900 hover:bg-slate-850 text-white'
                     }`}
                   >
                     {isAdded ? <Check size={10} /> : <ShoppingCart size={10} />}
@@ -114,7 +114,7 @@ export default function SearchModal({
               );
             })
           ) : (
-            <p className="text-[10px] text-zinc-500 text-center py-6">
+            <p className="text-[10px] text-slate-400 text-center py-6">
               {isAr ? 'لا توجد نتائج موازية، جرب مرادفات أخرى!' : 'No matching results found for your query!'}
             </p>
           )}
