@@ -357,7 +357,7 @@ export const uploadBackupToGoogleDrive = async (token: string, storeName: string
 // ==========================================
 
 export const sendGmailInvoice = async (token: string, order: any): Promise<boolean> => {
-  const emailAddress = order.customerEmail || 'al7anjri@gmail.com';
+  const emailAddress = order.customerEmail || '';
   const phone = order.customerPhone || 'N/A';
   const name = order.customerName || 'عميل كريم';
   const deliveryText = order.deliveryMethod === 'delivery' 
