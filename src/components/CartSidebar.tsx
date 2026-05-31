@@ -1,4 +1,4 @@
-import { Product, StoreSettings, Order, OrderItem } from '../types';
+import { Product, StoreSettings, Order, OrderItem, User } from '../types';
 import { ShoppingBag, X, Trash2, Plus, Minus, Send, CheckCircle, Sparkles, ClipboardList, ShieldCheck, Mail, MessageSquare } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { syncOrderToFirestore } from '../lib/firebaseStore';
@@ -17,6 +17,7 @@ interface CartSidebarProps {
   onClearCart: () => void;
   storeSettings: StoreSettings;
   lang: 'ar' | 'en';
+  onLogin?: (user: User) => void;
 }
 
 export default function CartSidebar({
@@ -27,7 +28,8 @@ export default function CartSidebar({
   onRemoveFromCart,
   onClearCart,
   storeSettings,
-  lang
+  lang,
+  onLogin
 }: CartSidebarProps) {
   const isAr = lang === 'ar';
   
@@ -257,14 +259,46 @@ export default function CartSidebar({
     e.preventDefault();
     if (cartItems.length === 0) return;
 
-    if (!customerName.trim() || !customerPhone.trim()) {
+    const trimmedName = customerName.trim();
+    const trimmedPhone = customerPhone.trim();
+
+    if (!trimmedName || !trimmedPhone) {
       alert(isAr ? 'يرجى كتابة الاسم ورقم الهاتف للمتابعة' : 'Please provide your name and phone number');
       return;
     }
 
+    // Automatically verify the session & log in during checkout if not already authenticated!
     if (!sessionVerified) {
-      alert(isAr ? '⚠️ عذراً! يجب توثيق رقم الجوال أولاً عبر إرسال الرمز لضمان جدية التواصل.' : '⚠️ Please verify your phone number via SMS OTP first.');
-      return;
+      const mockUser: User = {
+        name: trimmedName,
+        phone: trimmedPhone,
+        isVerified: true,
+        isAdmin: false
+      };
+      
+      // Save newly authenticated customer to general local ledger
+      const existingRaw = localStorage.getItem('sl_registered_customers') || '[]';
+      let existingList = [];
+      try {
+        existingList = JSON.parse(existingRaw);
+      } catch (_) {}
+      
+      const isNew = !existingList.some((c: any) => c.phone === mockUser.phone);
+      if (isNew) {
+        existingList.push({
+          name: mockUser.name,
+          phone: mockUser.phone,
+          email: '',
+          createdAt: new Date().toISOString()
+        });
+        localStorage.setItem('sl_registered_customers', JSON.stringify(existingList));
+      }
+
+      localStorage.setItem('sl_user_session', JSON.stringify(mockUser));
+      setSessionVerified(true);
+      if (onLogin) {
+        onLogin(mockUser);
+      }
     }
 
     if (deliveryMethod === 'delivery' && !customerAddress.trim()) {
@@ -1094,30 +1128,30 @@ export default function CartSidebar({
 
             {/* Address Form checkout */}
             <form onSubmit={handleCheckoutSubmit} className="space-y-4 pt-1 pb-6 text-right">
-              <h4 className="font-extrabold text-[12px] text-slate-900 border-b border-slate-200 pb-2 text-right">
-                {isAr ? 'بيانات الشحن وفحص الهوية المعتمدة:' : 'Checkout & Shipping Verification:'} 👤
+              <h4 className="font-extrabold text-[12px] text-slate-900 border-b border-slate-200 pb-2 text-right text-indigo-650 flex items-center justify-end gap-1">
+                <span>{isAr ? 'بيانات الشحن وتأكيد الطلب المباشر:' : 'Shipping & Customer Order details:'}</span>
+                <span>👤</span>
               </h4>
 
               <div>
                 <label className="text-[10px] font-bold text-slate-600 block mb-1">
-                  {isAr ? 'الاسم بالكامل للعميل:' : 'Customer Name:'}
+                  {isAr ? 'الاسم بالكامل للعميل للطلب والتحقق مسبقاً:' : 'Customer Full Name:'}
                 </label>
                 <input
                   type="text"
                   required
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder={isAr ? 'الاسم الثلاثي أو الثنائي' : 'e.g., Ali Ahmed'}
-                  className="w-full text-xs sm:text-sm p-3 bg-white text-slate-900 rounded-xl border border-slate-200 outline-none focus:border-indigo-600 text-right"
+                  placeholder={isAr ? 'الاسم الثلاثي أو الثنائي بالكامل' : 'e.g., Ali Ahmed'}
+                  className="w-full text-xs sm:text-sm p-3 bg-white text-slate-900 rounded-xl border border-slate-200 outline-none focus:border-indigo-600 text-right font-semibold"
                 />
               </div>
 
               <div>
                 <label className="text-[10px] font-bold text-slate-600 block mb-1">
-                  {isAr ? 'رقم الهاتف للتواصل متبوعاً بقفل رمز الأمان:' : 'Phone Contact with Security verification:'}
+                  {isAr ? 'رقم الهاتف للتواصل للطلب وتنشيط حسابك:' : 'Phone Contact Number:'}
                 </label>
                 
-                {/* Visual Lock Notification status */}
                 <div className="flex gap-2">
                   <input
                     type="tel"
@@ -1126,75 +1160,16 @@ export default function CartSidebar({
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     placeholder="39XXXXXX"
-                    className={`flex-1 text-xs sm:text-sm p-3 bg-white text-slate-900 rounded-xl border border-slate-200 outline-none focus:border-indigo-600 ${sessionVerified ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-extrabold cursor-not-allowed' : 'font-mono text-left'}`}
+                    className={`flex-1 text-xs sm:text-sm p-3 bg-white text-slate-900 rounded-xl border border-slate-200 outline-none focus:border-indigo-600 ${sessionVerified ? 'bg-emerald-50 text-emerald-850 border-emerald-200 font-extrabold cursor-not-allowed' : 'font-mono text-left font-bold'}`}
                   />
                   
-                  {sessionVerified ? (
+                  {sessionVerified && (
                     <span className="bg-emerald-50 text-emerald-700 px-3 py-1 bg-gradient-to-r rounded-xl border border-emerald-200 font-bold text-[10px] flex items-center gap-1 shrink-0 select-none">
                       <ShieldCheck size={13} className="text-emerald-600 shrink-0" />
-                      <span>{isAr ? 'مؤكد بالكامل' : 'Verified'}</span>
+                      <span>{isAr ? 'حساب مفعّل ✓' : 'Active ✓'}</span>
                     </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleRequestInlineOtp}
-                      disabled={verifyingPhone}
-                      className="bg-indigo-600 hover:bg-slate-900 text-white text-[10px] font-black px-3 rounded-xl transition shrink-0 cursor-pointer flex items-center justify-center gap-1"
-                    >
-                      <span>{verifyingPhone ? '...' : (isAr ? 'أرسل الرمز' : 'Verify')}</span>
-                    </button>
                   )}
                 </div>
-
-                {/* OTP Validation step if code is sent */}
-                {otpSent && !sessionVerified && (
-                  <div className="mt-3 bg-emerald-50/75 p-3.5 rounded-2xl border border-emerald-100 text-right space-y-2.5 animate-in fade-in-50">
-                    <p className="text-[11px] font-black text-emerald-900">
-                      {isAr ? '🔑 رمز الدخول والتحقق المؤقت من هويتك:' : '🔑 Temporary SMS token challenge:'}
-                    </p>
-                    <p className="text-[9.5px] text-slate-700 leading-relaxed">
-                      {isAr 
-                        ? 'أهلاً بك! لتأكيد طلبك وتوثيق رقم هاتفك، يرجى النقر على الزر الأخضر أدناه لفتح شات الواتساب الخاص بك (محادثة مع نفسك) لإرسال الرمز وقراءته، ثم انسخه وأدخله بالأسفل لتنشيط السلة الفوري:' 
-                        : 'Welcome! To confirm your order and authorize your phone, click the green button below to open a chat with your own WhatsApp number, send/read the code, then copy & paste it below:'}
-                    </p>
-
-                    {/* WhatsApp outbound button */}
-                    <a
-                      href={`https://wa.me/${getCleanPhoneForWa(customerPhone)}?text=${encodeURIComponent(
-                        isAr 
-                          ? `رمز التحقق الخاص بك في موقع S&L (${generatedOtp})`
-                          : `Your verification code on S&L is (${generatedOtp})`
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-[10px] text-center transition transform active:scale-95 flex items-center justify-center gap-1 shadow-xs cursor-pointer"
-                    >
-                      <span>💬 {isAr ? 'إرسال الرمز وتلقيه في الواتساب الخاص بك' : 'Send Code & Receive on Your WhatsApp'}</span>
-                    </a>
-                    
-                    <div className="flex gap-2 pt-1">
-                      <input
-                        type="text"
-                        maxLength={4}
-                        value={enteredOtp}
-                        onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g, ''))}
-                        placeholder="e.g., 1234"
-                        className="w-28 text-center text-xs font-black tracking-widest p-2 bg-white text-slate-900 rounded-lg border border-slate-250 outline-none focus:border-indigo-600 font-mono"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleVerifyInlineOtp}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black px-4 rounded-lg transition active:scale-95 cursor-pointer"
-                      >
-                        {isAr ? 'تأكيد الرمز' : 'Verify Code'}
-                      </button>
-                    </div>
-
-                    {otpError && (
-                      <p className="text-[9.5px] text-red-600 font-bold leading-normal">{otpError}</p>
-                    )}
-                  </div>
-                )}
               </div>
 
               {deliveryMethod === 'delivery' && (
@@ -1208,13 +1183,13 @@ export default function CartSidebar({
                     value={customerAddress}
                     onChange={(e) => setCustomerAddress(e.target.value)}
                     placeholder={isAr ? 'المدينة، المنطقة، رقم الشارع، المجمع السكني ورقم الطابق/المنزل...' : 'City, Block, Street, House/Flat No...'}
-                    className="w-full text-xs p-3 bg-white text-slate-900 rounded-xl border border-slate-200 outline-none focus:border-indigo-600 resize-none text-right placeholder-slate-400"
+                    className="w-full text-xs p-3 bg-white text-slate-900 rounded-xl border border-slate-200 outline-none focus:border-indigo-600 resize-none text-right placeholder-slate-400 font-semibold"
                   />
                 </div>
               )}
 
               {deliveryMethod === 'pickup' && (
-                <div className="bg-indigo-50/45 p-3 rounded-xl border border-indigo-100 text-[10px] text-slate-700 leading-relaxed space-y-1 text-right">
+                <div className="bg-indigo-50/45 p-3 rounded-xl border border-indigo-100 text-[10px] text-slate-750 leading-relaxed space-y-1 text-right">
                   <p className="font-extrabold text-indigo-850 text-[11px]">📍 {isAr ? 'تعليمات الاستلام من المحل:' : 'Pickup Instructions:'}</p>
                   <p>{isAr ? storeSettings.socials.pickupInstructionsAr : storeSettings.socials.pickupInstructionsEn}</p>
                 </div>
@@ -1223,13 +1198,11 @@ export default function CartSidebar({
               {/* Verified Checkout submission trigger */}
               <button
                 type="submit"
-                className={`w-full mt-2 text-white font-black py-3 rounded-xl text-xs sm:text-sm cursor-pointer shadow-lg flex items-center justify-center gap-2 transition transform active:scale-95 ${sessionVerified ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100' : 'bg-slate-400 cursor-not-allowed opacity-80'}`}
+                className="w-full mt-2 text-white font-black py-3 rounded-xl text-xs sm:text-sm cursor-pointer shadow-lg flex items-center justify-center gap-2 transition transform active:scale-95 bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100/55"
               >
                 <Send size={15} />
                 <span>
-                  {sessionVerified 
-                    ? (isAr ? 'شحن وإرسال الطلب الآن بلمسة واحدة 🚀' : 'Authorize Order Now 🚀') 
-                    : (isAr ? '🔐 يرجى تأكيد رمز الجوال أولاً لإرسال طلبك' : '🔐 Please verify phone first to send order')}
+                  {isAr ? 'شحن وإرسال الطلب الآن وتأكيده بالمحل 🚀' : 'Authorize & Send Order Fast Now 🚀'}
                 </span>
               </button>
             </form>

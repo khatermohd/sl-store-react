@@ -135,6 +135,16 @@ async function startServer() {
     console.log("Supabase credentials not configured. Storing orders locally.");
   }
 
+  // Helper to format Supabase errors cleanly and prevent printing massive HTML bodies in the logs
+  const formatSupabaseError = (err: any): string => {
+    if (!err) return "Unknown error";
+    const msg = err.message || String(err);
+    if (msg.includes("<!DOCTYPE html") || msg.includes("<html") || msg.includes("<!doctype html") || msg.includes("supabase.co")) {
+      return "Supabase returned an HTML response (Project is paused, deleted, or incorrect). Falling back gracefully.";
+    }
+    return msg;
+  };
+
   // Callmebot WhatsApp Notification Helper
   const sendCallmebotNotification = async (order: any) => {
     const settings = loadSettings();
@@ -498,7 +508,7 @@ ${listItems}
         });
         return res.json(parsedOrders);
       } catch (err: any) {
-        console.error("Error reading from Supabase, falling back to local storage:", err.message);
+        console.error("Error reading from Supabase, falling back to local storage:", formatSupabaseError(err));
         return res.json(loadOrders());
       }
     } else {
@@ -548,7 +558,7 @@ ${listItems}
           return res.status(404).json({ error: "Order not found" });
         }
       } catch (err: any) {
-        console.error("Error reading single order from Supabase:", err.message);
+        console.error("Error reading single order from Supabase:", formatSupabaseError(err));
         const orders = loadOrders();
         const found = orders.find((o) => o.id === orderId);
         if (found) {
@@ -602,11 +612,11 @@ ${listItems}
         if (error) throw error;
         console.log(`Order ${newOrder.id} successfully saved to Supabase.`);
       } catch (err: any) {
-        console.error("Supabase upsert failed, successfully saved to local storage instead:", err.message);
+        console.error("Supabase upsert failed, successfully saved to local storage instead:", formatSupabaseError(err));
         // Still try sending WhatsApp & Telegram before returning
         sendCallmebotNotification(newOrder).catch((e) => console.error("WhatsApp Notification trigger error during fallback:", e));
         sendCallmebotTelegramNotification(newOrder).catch((e) => console.error("Telegram Notification trigger error during fallback:", e));
-        return res.json({ success: true, order: newOrder, warning: `Saved locally: ${err.message}` });
+        return res.json({ success: true, order: newOrder, warning: `Saved locally: ${formatSupabaseError(err)}` });
       }
     }
     
@@ -666,9 +676,9 @@ ${listItems}
         console.log(`Order ${orderId} status updated to ${status} in Supabase.`);
         return res.json({ success: true, order: updatedOrder || newRawData || { id: orderId, status } });
       } catch (err: any) {
-        console.error("Supabase status update failed, updated locally instead:", err.message);
+        console.error("Supabase status update failed, updated locally instead:", formatSupabaseError(err));
         if (updatedOrder) {
-          return res.json({ success: true, order: updatedOrder, warning: `Updated locally: ${err.message}` });
+          return res.json({ success: true, order: updatedOrder, warning: `Updated locally: ${formatSupabaseError(err)}` });
         }
         return res.status(500).json({ error: "Failed to update status on cloud database." });
       }
@@ -700,8 +710,8 @@ ${listItems}
         if (error) throw error;
         console.log(`Order ${orderId} cleared in Supabase.`);
       } catch (err: any) {
-        console.error("Supabase delete failed, deleted locally:", err.message);
-        return res.json({ success: true, warning: `Deleted locally: ${err.message}` });
+        console.error("Supabase delete failed, deleted locally:", formatSupabaseError(err));
+        return res.json({ success: true, warning: `Deleted locally: ${formatSupabaseError(err)}` });
       }
     }
     res.json({ success: true });
@@ -721,8 +731,8 @@ ${listItems}
         if (error) throw error;
         console.log("All orders cleared in Supabase.");
       } catch (err: any) {
-        console.error("Supabase bulk clear failed, cleared locally:", err.message);
-        return res.json({ success: true, warning: `Cleared locally: ${err.message}` });
+        console.error("Supabase bulk clear failed, cleared locally:", formatSupabaseError(err));
+        return res.json({ success: true, warning: `Cleared locally: ${formatSupabaseError(err)}` });
       }
     }
     res.json({ success: true });

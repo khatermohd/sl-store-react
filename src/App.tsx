@@ -359,6 +359,7 @@ export default function App() {
         onClearCart={handleClearCart}
         storeSettings={storeSettings}
         lang={lang}
+        onLogin={handleLogin}
       />
 
       {/* Login Screens Authentication modal */}
