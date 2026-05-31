@@ -909,34 +909,15 @@ export default function CartSidebar({
             </div>
 
             <div className="space-y-2">
-              <a
-                href={completedOrder ? `https://wa.me/97337120456?text=${encodeURIComponent(
-                  `*تأكيد طلب جديد في متجر إس آند إل (البحرين)*\n` +
-                  `رقم الفاتورة الموحدة: *${completedOrder.id}*\n` +
-                  `اسم الزبون الفاضل: *${completedOrder.customerName}*\n` +
-                  `رقم الهاتف للتواصل: *${completedOrder.customerPhone}*\n` +
-                  `نوع التوصيل المطلوب: *${completedOrder.deliveryMethod === 'delivery' ? 'توصيل للمنزل' : 'استلام من المحل'}*\n` +
-                  (completedOrder.customerAddress ? `العنوان الشخصي المعتمد: *${completedOrder.customerAddress}*\n` : '') +
-                  `إجمالي المبلغ كلياً: *${completedOrder.grandTotal} د.ب*\n\n` +
-                  `*السلع المطلوبة:*\n` +
-                  completedOrder.items.map((it: any) => `- ${it.titleAr} (${it.quantity} حبات)`).join('\n')
-                )}` : clientWpLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-[#25d366] hover:bg-[#128c7e] text-white font-black py-3 px-3 rounded-xl text-xs transition active:scale-95 cursor-pointer shadow-md text-center flex items-center justify-center gap-2 animate-pulse"
-              >
-                <span>💬</span>
-                <span>{isAr ? 'أرسل الفاتورة وأكد طلبك فوراً بالواتساب' : 'Send Invoice & Confirm on WhatsApp'}</span>
-              </a>
-
               <button
                 onClick={() => {
+                  onClearCart();
                   setSidebarTab('history');
                 }}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 px-3 rounded-xl text-xs transition active:scale-95 cursor-pointer shadow-md text-center flex items-center justify-center gap-2"
               >
                 <span>📦</span>
-                <span>{isAr ? 'انتقل لتتبع تفاصيل وحالة هذا الطلب الآن' : 'Switch to Tracking Sheet'}</span>
+                <span>{isAr ? 'متابعة وتتبع حالة هذا الطلب الآن' : 'Track Order Status Now'}</span>
               </button>
 
               <button
@@ -952,7 +933,7 @@ export default function CartSidebar({
                 }}
                 className="w-full bg-slate-200/80 hover:bg-slate-200 text-slate-700 font-extrabold py-3 rounded-xl text-xs transition cursor-pointer border border-slate-300"
               >
-                🧹 {isAr ? 'تصفير السلّة والعودة لبدء شراء جديد' : 'Flush Basket & Return'}
+                🧹 {isAr ? 'العودة للمتجر وبدء شراء جديد' : 'Return to Shop & Start Over'}
               </button>
             </div>
           </div>
@@ -1135,41 +1116,30 @@ export default function CartSidebar({
 
               <div>
                 <label className="text-[10px] font-bold text-slate-600 block mb-1">
-                  {isAr ? 'الاسم بالكامل للعميل للطلب والتحقق مسبقاً:' : 'Customer Full Name:'}
+                  {isAr ? 'اسم العميل بالكامل:' : 'Customer Name:'}
                 </label>
                 <input
                   type="text"
                   required
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder={isAr ? 'الاسم الثلاثي أو الثنائي بالكامل' : 'e.g., Ali Ahmed'}
+                  placeholder={isAr ? 'الاسم بالكامل' : 'e.g., Ali Ahmed'}
                   className="w-full text-xs sm:text-sm p-3 bg-white text-slate-900 rounded-xl border border-slate-200 outline-none focus:border-indigo-600 text-right font-semibold"
                 />
               </div>
 
               <div>
                 <label className="text-[10px] font-bold text-slate-600 block mb-1">
-                  {isAr ? 'رقم الهاتف للتواصل للطلب وتنشيط حسابك:' : 'Phone Contact Number:'}
+                  {isAr ? 'رقم الهاتف للتواصل للتوصيل:' : 'Phone Contact Number:'}
                 </label>
-                
-                <div className="flex gap-2">
-                  <input
-                    type="tel"
-                    required
-                    readOnly={sessionVerified}
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="39XXXXXX"
-                    className={`flex-1 text-xs sm:text-sm p-3 bg-white text-slate-900 rounded-xl border border-slate-200 outline-none focus:border-indigo-600 ${sessionVerified ? 'bg-emerald-50 text-emerald-850 border-emerald-200 font-extrabold cursor-not-allowed' : 'font-mono text-left font-bold'}`}
-                  />
-                  
-                  {sessionVerified && (
-                    <span className="bg-emerald-50 text-emerald-700 px-3 py-1 bg-gradient-to-r rounded-xl border border-emerald-200 font-bold text-[10px] flex items-center gap-1 shrink-0 select-none">
-                      <ShieldCheck size={13} className="text-emerald-600 shrink-0" />
-                      <span>{isAr ? 'حساب مفعّل ✓' : 'Active ✓'}</span>
-                    </span>
-                  )}
-                </div>
+                <input
+                  type="tel"
+                  required
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="39XXXXXX"
+                  className="w-full text-xs sm:text-sm p-3 bg-white text-slate-900 rounded-xl border border-slate-200 outline-none focus:border-indigo-600 font-mono text-left font-bold"
+                />
               </div>
 
               {deliveryMethod === 'delivery' && (
@@ -1202,7 +1172,7 @@ export default function CartSidebar({
               >
                 <Send size={15} />
                 <span>
-                  {isAr ? 'شحن وإرسال الطلب الآن وتأكيده بالمحل 🚀' : 'Authorize & Send Order Fast Now 🚀'}
+                  {isAr ? 'تأكيد وشحن الطلب الآن 🚀' : 'Confirm & Place Order Now 🚀'}
                 </span>
               </button>
             </form>
